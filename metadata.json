@@ -1,0 +1,6 @@
+{
+  "name": "Claude Code Ecosystem & Stack Builder",
+  "description": "Comprehensive, verified directory of Claude Code skills, agents, MCPs, commands, and interactive stack configuration builder.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

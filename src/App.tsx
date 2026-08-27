@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useEffect } from 'react';
-import { ComponentItem, ComponentType, Category, StackPreset, ThemeMode } from './types';
+import { ComponentItem, ComponentType, Category, StackPreset, ThemeMode, AIProvider } from './types';
 import { 
   INITIAL_COMPONENTS, 
   PROMPT_DEFAULT_STACK_SLUGS, 
@@ -168,6 +168,7 @@ export default function App() {
   const [activeType, setActiveType] = useState<ComponentType | 'all'>('all');
   const [isFavoritesOnly, setIsFavoritesOnly] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState<Category>('all');
+  const [selectedProvider, setSelectedProvider] = useState<AIProvider | 'all'>('all');
   const [searchQuery, setSearchQuery] = useState('');
   const [sortBy, setSortBy] = useState<'popular' | 'trending' | 'installs' | 'alpha' | 'newest'>('popular');
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
@@ -269,7 +270,7 @@ export default function App() {
   // Reset page on filter change
   useEffect(() => {
     setCurrentPage(1);
-  }, [activeType, isFavoritesOnly, selectedCategory, searchQuery, sortBy]);
+  }, [activeType, isFavoritesOnly, selectedCategory, selectedProvider, searchQuery, sortBy]);
 
   // Stack items resolved objects
   const stackItems = useMemo(() => {
@@ -472,6 +473,8 @@ export default function App() {
         <FilterBar
           selectedCategory={selectedCategory}
           onSelectCategory={(cat) => { setSelectedCategory(cat); setCurrentPage(1); }}
+          selectedProvider={selectedProvider}
+          onSelectProvider={(prov) => { setSelectedProvider(prov); setCurrentPage(1); }}
           sortBy={sortBy}
           onSortChange={setSortBy}
           viewMode={viewMode}
@@ -481,11 +484,13 @@ export default function App() {
           isDark={isDark}
           activeFilterCount={
             (selectedCategory !== 'all' ? 1 : 0) + 
+            (selectedProvider !== 'all' ? 1 : 0) +
             (searchQuery ? 1 : 0) +
             (isFavoritesOnly ? 1 : 0)
           }
           onResetFilters={() => {
             setSelectedCategory('all');
+            setSelectedProvider('all');
             setSearchQuery('');
             setIsFavoritesOnly(false);
             setCurrentPage(1);
@@ -506,12 +511,13 @@ export default function App() {
             <p className={`text-xs mt-1 max-w-md mx-auto ${isDark ? 'text-zinc-400' : 'text-zinc-500'}`}>
               {isFavoritesOnly
                 ? "You haven't added any favorites yet. Click the star icon on any component card to add it to your Workspace storage!"
-                : "Try clearing your search query or switching to a different category or component type tab."}
+                : "Try clearing your search query or switching to a different category, AI provider, or component type tab."}
             </p>
             <button
               onClick={() => {
                 setSearchQuery('');
                 setSelectedCategory('all');
+                setSelectedProvider('all');
                 setActiveType('all');
                 setIsFavoritesOnly(false);
               }}
@@ -538,6 +544,7 @@ export default function App() {
                 isDark={isDark}
                 viewMode={viewMode}
                 onCopyCli={(cmd) => handleCopyCli(cmd, comp.id)}
+                selectedProvider={selectedProvider}
               />
             ))}
           </div>
@@ -641,6 +648,7 @@ export default function App() {
         onToggleStack={handleToggleStack}
         isDark={isDark}
         onNotify={showToast}
+        initialProvider={selectedProvider !== 'all' ? selectedProvider : 'claude'}
       />
 
       {/* Prompt Tester Simulator Modal */}

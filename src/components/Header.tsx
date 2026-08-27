@@ -1,14 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { ComponentType, ThemeMode } from '../types';
 import { 
-  Sparkles, 
   Search, 
-  Layers, 
-  Terminal, 
-  Sliders, 
-  Anchor, 
-  Cpu, 
-  Puzzle, 
   Moon, 
   Sun,
   Monitor,
@@ -263,17 +256,6 @@ export const Header: React.FC<HeaderProps> = ({
   onOpenSignIn,
   userSignedIn = false
 }) => {
-  const typeNavItems: { type: ComponentType | 'all'; label: string; countKey: string; icon: React.ReactNode }[] = [
-    { type: 'all', label: 'All', countKey: 'all', icon: <Layers className="w-3.5 h-3.5" /> },
-    { type: 'skill', label: 'Skills', countKey: 'skill', icon: <Sparkles className="w-3.5 h-3.5" /> },
-    { type: 'agent', label: 'Agents', countKey: 'agent', icon: <Cpu className="w-3.5 h-3.5" /> },
-    { type: 'command', label: 'Commands', countKey: 'command', icon: <Terminal className="w-3.5 h-3.5" /> },
-    { type: 'setting', label: 'Settings', countKey: 'setting', icon: <Sliders className="w-3.5 h-3.5" /> },
-    { type: 'hook', label: 'Hooks', countKey: 'hook', icon: <Anchor className="w-3.5 h-3.5" /> },
-    { type: 'mcp', label: 'MCPs', countKey: 'mcp', icon: <Cpu className="w-3.5 h-3.5" /> },
-    { type: 'plugin', label: 'Plugins', countKey: 'plugin', icon: <Puzzle className="w-3.5 h-3.5" /> }
-  ];
-
   return (
     <header className={`sticky top-0 z-40 border-b transition-colors duration-200 ${
       isDark ? 'bg-zinc-950/95 border-zinc-800 text-zinc-100 backdrop-blur-md' : 'bg-white/95 border-zinc-200 text-zinc-900 backdrop-blur-md'
@@ -383,43 +365,6 @@ export const Header: React.FC<HeaderProps> = ({
               </button>
             )}
           </div>
-        </div>
-
-        {/* Category / Type Tabs Bar - Smooth touch scrolling */}
-        <div className="flex items-center space-x-1.5 overflow-x-auto py-2.5 scrollbar-none border-t border-zinc-100 dark:border-zinc-800/80 text-xs font-medium -mx-3 px-3 sm:mx-0 sm:px-0">
-          {typeNavItems.map((item) => {
-            const isSelected = activeType === item.type;
-            const count = typeCounts[item.countKey] ?? 0;
-            return (
-              <button
-                key={item.type}
-                onClick={() => onSelectType(item.type)}
-                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg whitespace-nowrap transition-all duration-150 shrink-0 min-h-[38px] ${
-                  isSelected
-                    ? isDark
-                      ? 'bg-zinc-800 text-amber-400 font-semibold shadow-sm ring-1 ring-amber-500/30'
-                      : 'bg-amber-100 border border-amber-300 text-zinc-950 font-bold shadow-xs'
-                    : isDark
-                      ? 'text-zinc-400 hover:text-zinc-200 hover:bg-zinc-900/80'
-                      : 'text-zinc-700 hover:text-zinc-950 hover:bg-zinc-100 font-medium'
-                }`}
-              >
-                {item.icon}
-                <span>{item.label}</span>
-                <span className={`text-[10px] sm:text-[11px] px-1.5 py-0.2 rounded-full font-mono ${
-                  isSelected
-                    ? isDark
-                      ? 'bg-amber-400/20 text-amber-300'
-                      : 'bg-amber-200/80 text-zinc-950 font-bold'
-                    : isDark
-                      ? 'bg-zinc-900 text-zinc-500'
-                      : 'bg-zinc-200/70 text-zinc-800 font-semibold'
-                }`}>
-                  {count.toLocaleString()}
-                </span>
-              </button>
-            );
-          })}
         </div>
       </div>
     </header>

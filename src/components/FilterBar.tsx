@@ -1,11 +1,14 @@
 import React from 'react';
-import { Category } from '../types';
+import { Category, AIProvider } from '../types';
 import { CATEGORIES_LIST } from '../data/componentsData';
-import { LayoutGrid, List, Plus, ArrowUpDown, Filter, X } from 'lucide-react';
+import { AI_PROVIDERS, getProviderMeta } from '../utils/formatGenerators';
+import { LayoutGrid, List, Plus, ArrowUpDown, Filter, X, Cpu, Sparkles } from 'lucide-react';
 
 interface FilterBarProps {
   selectedCategory: Category;
   onSelectCategory: (cat: Category) => void;
+  selectedProvider: AIProvider | 'all';
+  onSelectProvider: (provider: AIProvider | 'all') => void;
   sortBy: 'popular' | 'trending' | 'installs' | 'alpha' | 'newest';
   onSortChange: (sort: 'popular' | 'trending' | 'installs' | 'alpha' | 'newest') => void;
   viewMode: 'grid' | 'list';
@@ -20,6 +23,8 @@ interface FilterBarProps {
 export const FilterBar: React.FC<FilterBarProps> = ({
   selectedCategory,
   onSelectCategory,
+  selectedProvider,
+  onSelectProvider,
   sortBy,
   onSortChange,
   viewMode,
@@ -77,15 +82,85 @@ export const FilterBar: React.FC<FilterBarProps> = ({
         )}
       </div>
 
+      {/* AI Provider Ecosystem Filter Bar */}
+      <div className="flex items-center gap-1.5 sm:gap-2 overflow-x-auto pb-2 scrollbar-none -mx-4 px-4 sm:mx-0 sm:px-0">
+        <div className={`flex items-center gap-1.5 text-xs font-semibold px-2 py-1 shrink-0 ${
+          isDark ? 'text-zinc-400' : 'text-zinc-500'
+        }`}>
+          <Cpu className="w-3.5 h-3.5 text-amber-500" />
+          <span>AI Provider:</span>
+        </div>
+
+        <button
+          onClick={() => onSelectProvider('all')}
+          className={`px-3 py-1.5 rounded-lg text-xs font-medium whitespace-nowrap transition-all duration-150 border shrink-0 min-h-[36px] cursor-pointer flex items-center gap-1.5 ${
+            selectedProvider === 'all'
+              ? isDark
+                ? 'bg-amber-500/10 border-amber-500/50 text-amber-400 font-bold shadow-xs ring-1 ring-amber-500/30'
+                : 'bg-zinc-900 border-zinc-950 text-white font-bold shadow-xs'
+              : isDark
+                ? 'bg-zinc-900/60 border-zinc-800 text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800/80'
+                : 'bg-white border-zinc-200 text-zinc-800 hover:text-zinc-950 hover:bg-zinc-50 font-medium'
+          }`}
+        >
+          <Sparkles className="w-3.5 h-3.5 text-amber-500" />
+          <span>All Providers</span>
+        </button>
+
+        {AI_PROVIDERS.map((provider) => {
+          const isSelected = selectedProvider === provider.id;
+          return (
+            <button
+              key={provider.id}
+              onClick={() => onSelectProvider(provider.id)}
+              className={`px-3 py-1.5 rounded-lg text-xs font-medium whitespace-nowrap transition-all duration-150 border shrink-0 min-h-[36px] cursor-pointer flex items-center gap-1.5 ${
+                isSelected
+                  ? isDark
+                    ? `${provider.bgColor} ${provider.borderColor} ${provider.color} font-bold shadow-xs ring-1 ring-current`
+                    : `${provider.bgColor} ${provider.borderColor} text-zinc-950 font-bold shadow-xs ring-1 ring-zinc-300`
+                  : isDark
+                    ? 'bg-zinc-900/60 border-zinc-800 text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800/80'
+                    : 'bg-white border-zinc-200 text-zinc-800 hover:text-zinc-950 hover:bg-zinc-50 font-medium'
+              }`}
+            >
+              <span className={`w-2 h-2 rounded-full ${
+                provider.id === 'claude' ? 'bg-amber-500' :
+                provider.id === 'gemini' ? 'bg-blue-500' :
+                provider.id === 'chatgpt' ? 'bg-emerald-500' :
+                provider.id === 'zai' ? 'bg-purple-500' :
+                provider.id === 'opencode' ? 'bg-cyan-500' :
+                provider.id === 'deepseek' ? 'bg-indigo-500' :
+                'bg-pink-500'
+              }`} />
+              <span>{provider.shortName}</span>
+            </button>
+          );
+        })}
+      </div>
+
       {/* Action and Sort Bar */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-3 border-t border-zinc-200/80 dark:border-zinc-800/60">
         
         {/* Count & Header */}
         <div className="flex items-center justify-between sm:justify-start gap-3">
-          <h3 className={`text-base sm:text-lg font-bold tracking-tight ${
+          <h3 className={`text-base sm:text-lg font-bold tracking-tight flex items-center gap-2 flex-wrap ${
             isDark ? 'text-zinc-100' : 'text-zinc-900'
           }`}>
-            {selectedCategory === 'all' ? 'Most Popular' : CATEGORIES_LIST.find(c => c.id === selectedCategory)?.label}
+            <span>
+              {selectedCategory === 'all'
+                ? selectedProvider === 'all'
+                  ? 'Most Popular'
+                  : `Most Popular (${getProviderMeta(selectedProvider).shortName})`
+                : CATEGORIES_LIST.find(c => c.id === selectedCategory)?.label
+              }
+            </span>
+            {selectedProvider !== 'all' && (
+              <span className={`text-xs px-2.5 py-0.5 rounded-full border font-mono font-semibold ${
+                getProviderMeta(selectedProvider).bgColor
+              } ${getProviderMeta(selectedProvider).borderColor} ${getProviderMeta(selectedProvider).color}`}>
+                {getProviderMeta(selectedProvider).shortName} Ecosystem
+              </span>
+            )}
           </h3>
           <span className={`text-xs font-medium px-2.5 py-0.5 rounded-full border ${
             isDark ? 'bg-zinc-800/80 text-zinc-400 border-zinc-700/60' : 'bg-zinc-100 text-zinc-600 border-zinc-200'
@@ -180,3 +255,4 @@ export const FilterBar: React.FC<FilterBarProps> = ({
     </div>
   );
 };
+

@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { ComponentItem } from '../types';
+import { ComponentItem, AIProvider } from '../types';
+import { getProviderInstallCommand, getProviderMeta } from '../utils/formatGenerators';
 import { 
   Sparkles, 
   Cpu, 
@@ -30,6 +31,7 @@ interface ComponentCardProps {
   isDark: boolean;
   viewMode?: 'grid' | 'list';
   onCopyCli?: (text: string) => void;
+  selectedProvider?: AIProvider | 'all';
 }
 
 export const ComponentCard: React.FC<ComponentCardProps> = ({
@@ -41,9 +43,11 @@ export const ComponentCard: React.FC<ComponentCardProps> = ({
   onToggleBookmark,
   isDark,
   viewMode = 'grid',
-  onCopyCli
+  onCopyCli,
+  selectedProvider = 'all'
 }) => {
   const [copied, setCopied] = useState(false);
+  const providerMeta = selectedProvider !== 'all' ? getProviderMeta(selectedProvider as AIProvider) : null;
 
   const getComponentIcon = () => {
     switch (component.type) {
@@ -68,7 +72,9 @@ export const ComponentCard: React.FC<ComponentCardProps> = ({
 
   const handleCopy = (e: React.MouseEvent) => {
     e.stopPropagation();
-    const command = component.cliCommand || `npx claude-code-templates@latest --${component.type} ${component.slug}`;
+    const command = providerMeta
+      ? getProviderInstallCommand(component, providerMeta.id)
+      : (component.cliCommand || `npx claude-code-templates@latest --${component.type} ${component.slug}`);
     navigator.clipboard.writeText(command);
     setCopied(true);
     if (onCopyCli) onCopyCli(command);
@@ -123,6 +129,11 @@ export const ComponentCard: React.FC<ComponentCardProps> = ({
                 <span className="text-[9px] font-mono px-1.5 py-0.2 rounded bg-zinc-500/10 text-zinc-600 dark:text-zinc-400 border border-zinc-500/20 font-bold">
                   {component.type === 'skill' ? '.md' : component.type === 'agent' ? '.yaml' : component.type === 'command' ? '.sh' : component.type === 'setting' ? '.json' : component.type === 'hook' ? '.sh' : component.type === 'mcp' ? 'mcp' : '.json'}
                 </span>
+                {providerMeta && (
+                  <span className={`text-[9px] font-mono px-1.5 py-0.2 rounded font-bold uppercase border ${providerMeta.bgColor} ${providerMeta.borderColor} ${providerMeta.color}`}>
+                    {providerMeta.shortName}
+                  </span>
+                )}
               </div>
             </div>
             <p className={`text-xs mt-1 line-clamp-2 sm:line-clamp-1 ${isDark ? 'text-zinc-400' : 'text-zinc-700'}`}>
@@ -226,6 +237,11 @@ export const ComponentCard: React.FC<ComponentCardProps> = ({
                 <span className="text-[9px] font-mono px-1.5 py-0.2 rounded bg-zinc-500/10 text-zinc-600 dark:text-zinc-400 border border-zinc-500/20 font-bold">
                   {component.type === 'skill' ? '.md' : component.type === 'agent' ? '.yaml' : component.type === 'command' ? '.sh' : component.type === 'setting' ? '.json' : component.type === 'hook' ? '.sh' : component.type === 'mcp' ? 'mcp' : '.json'}
                 </span>
+                {providerMeta && (
+                  <span className={`text-[9px] font-mono px-1.5 py-0.2 rounded font-bold uppercase border ${providerMeta.bgColor} ${providerMeta.borderColor} ${providerMeta.color}`}>
+                    {providerMeta.shortName}
+                  </span>
+                )}
               </div>
             </div>
           </div>

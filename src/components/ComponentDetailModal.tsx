@@ -66,6 +66,7 @@ interface ComponentDetailModalProps {
   onToggleStack: (item: ComponentItem) => void;
   isDark: boolean;
   onNotify: (msg: string) => void;
+  initialProvider?: AIProvider;
 }
 
 type FormatCategory = 'overview' | 'md' | 'mcp' | 'json' | 'yaml' | 'sh' | 'ps1' | 'docker' | 'env' | 'install-hub';
@@ -77,10 +78,11 @@ export const ComponentDetailModal: React.FC<ComponentDetailModalProps> = ({
   isInStack,
   onToggleStack,
   isDark,
-  onNotify
+  onNotify,
+  initialProvider = 'claude'
 }) => {
   const [activeTab, setActiveTab] = useState<FormatCategory>('overview');
-  const [selectedProvider, setSelectedProvider] = useState<AIProvider>('claude');
+  const [selectedProvider, setSelectedProvider] = useState<AIProvider>(initialProvider);
   const [mdViewMode, setMdViewMode] = useState<'preview' | 'raw'>('preview');
   const [mcpViewMode, setMcpViewMode] = useState<'desktop-config' | 'fastmcp-python'>('desktop-config');
   const [testPrompt, setTestPrompt] = useState('');
@@ -91,10 +93,11 @@ export const ComponentDetailModal: React.FC<ComponentDetailModalProps> = ({
   useEffect(() => {
     if (component) {
       setActiveTab('overview');
+      setSelectedProvider(initialProvider);
       setTestResult(null);
       setTestPrompt('');
     }
-  }, [component?.id, isOpen]);
+  }, [component?.id, isOpen, initialProvider]);
 
   // Type-specific allowed formats mapping (strictly separated per tool type)
   const TYPE_FORMAT_MAP: Record<ComponentType, FormatCategory[]> = {

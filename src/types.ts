@@ -23,6 +23,13 @@ export type Category =
   | 'database'
   | 'sentry';
 
+export interface SkillFileTree {
+  skillMd: string;
+  templateMd: string;
+  exampleSampleMd: string;
+  scriptValidateSh: string;
+}
+
 export interface ComponentItem {
   id: string;
   slug: string; // e.g. "development/code-reviewer"
@@ -47,6 +54,7 @@ export interface ComponentItem {
   isTrending?: boolean;
   views?: number;
   copies?: number;
+  skillDirectory?: SkillFileTree;
 }
 
 export interface FeaturedPartner {

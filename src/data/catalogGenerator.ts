@@ -1,4 +1,5 @@
 import { ComponentItem, ComponentType, Category } from '../types';
+import { generateDefaultSkillDirectory } from '../utils/formatGenerators';
 
 // Curated flagship top components with exact counts and full instructions
 export const TOP_CURATED_COMPONENTS: ComponentItem[] = [
@@ -1653,12 +1654,18 @@ export function generateFullCatalog(): ComponentItem[] {
         ? rawItem.compatibility 
         : ['Claude 3.7 Sonnet', 'Claude Code CLI v1.0+'];
 
-      result.push({
+      const itemToPush: ComponentItem = {
         ...rawItem,
         author,
         dependencies,
         compatibility
-      });
+      };
+
+      if (itemToPush.type === 'skill' && !itemToPush.skillDirectory) {
+        itemToPush.skillDirectory = generateDefaultSkillDirectory(itemToPush);
+      }
+
+      result.push(itemToPush);
     }
   };
 

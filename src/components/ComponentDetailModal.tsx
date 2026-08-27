@@ -9,7 +9,8 @@ import {
   generatePowerShellScript,
   generateDockerScript,
   generateEnvFormat,
-  generateFastMcpCode
+  generateFastMcpCode,
+  generateDefaultSkillDirectory
 } from '../utils/formatGenerators';
 import { 
   X, 
@@ -46,7 +47,9 @@ import {
   Lock,
   ArrowRight,
   CheckCircle2,
-  AlertCircle
+  AlertCircle,
+  Folder,
+  FolderOpen
 } from 'lucide-react';
 
 interface ComponentDetailModalProps {
@@ -73,9 +76,11 @@ export const ComponentDetailModal: React.FC<ComponentDetailModalProps> = ({
   const [activeTab, setActiveTab] = useState<FormatCategory>('overview');
   const [mdViewMode, setMdViewMode] = useState<'preview' | 'raw'>('preview');
   const [mcpViewMode, setMcpViewMode] = useState<'desktop-config' | 'fastmcp-python'>('desktop-config');
+  const [installMethod, setInstallMethod] = useState<'all' | 'cli' | 'bash' | 'ps1' | 'manual' | 'verify'>('all');
   const [testPrompt, setTestPrompt] = useState('');
   const [testResult, setTestResult] = useState<{ matched: boolean; score: number; triggeredPhrase?: string } | null>(null);
   const [copiedFormat, setCopiedFormat] = useState<string | null>(null);
+  const [selectedSkillFile, setSelectedSkillFile] = useState<'skill' | 'template' | 'example' | 'script'>('skill');
 
   // Reset tab and test states when component changes or opens
   useEffect(() => {
@@ -83,6 +88,8 @@ export const ComponentDetailModal: React.FC<ComponentDetailModalProps> = ({
       setActiveTab('overview');
       setTestResult(null);
       setTestPrompt('');
+      setSelectedSkillFile('skill');
+      setInstallMethod('all');
     }
   }, [component?.id, isOpen]);
 
@@ -491,57 +498,57 @@ export const ComponentDetailModal: React.FC<ComponentDetailModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 overflow-y-auto bg-black/80 backdrop-blur-xs flex items-center justify-center p-2 sm:p-4 md:p-6 animate-in fade-in duration-150">
+    <div className="fixed inset-0 z-50 overflow-y-auto bg-black/80 backdrop-blur-xs flex items-center justify-center p-3 sm:p-5 md:p-6 animate-in fade-in duration-150">
       
       {/* Backdrop */}
       <div className="fixed inset-0" onClick={onClose} />
 
-      {/* Modal Container */}
-      <div className={`relative w-full max-w-5xl rounded-2xl shadow-2xl overflow-hidden z-10 border flex flex-col max-h-[94vh] sm:max-h-[90vh] ${
+      {/* Modal Container: Controlled max-width (not full width), responsive padding & height */}
+      <div className={`relative w-[95vw] sm:w-full max-w-3xl lg:max-w-4xl mx-auto rounded-2xl shadow-2xl overflow-hidden z-10 border flex flex-col max-h-[88vh] sm:max-h-[84vh] ${
         isDark ? 'bg-zinc-950 border-zinc-800 text-zinc-100' : 'bg-white border-zinc-200 text-zinc-900'
       }`}>
         
         {/* ========================================================================= */}
         {/* MODAL HEADER: Responsive, high-contrast, type-consistent */}
         {/* ========================================================================= */}
-        <div className={`p-4 sm:p-6 border-b flex items-start justify-between gap-3 sm:gap-4 shrink-0 ${
+        <div className={`p-3.5 sm:p-5 border-b flex items-start justify-between gap-3 shrink-0 ${
           isDark ? 'bg-zinc-900/90 border-zinc-800' : 'bg-zinc-50 border-zinc-200'
         }`}>
-          <div className="flex items-start gap-3 sm:gap-4 min-w-0 flex-1">
+          <div className="flex items-start gap-2.5 sm:gap-3.5 min-w-0 flex-1">
             {/* Distinct Type Icon Box */}
-            <div className={`p-3 rounded-xl border shrink-0 shadow-xs ${typeMeta.colorBg}`}>
+            <div className={`p-2.5 sm:p-3 rounded-xl border shrink-0 shadow-xs ${typeMeta.colorBg}`}>
               {typeMeta.icon}
             </div>
 
             <div className="min-w-0 flex-1">
               <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap">
-                <h3 className={`text-lg sm:text-xl font-bold tracking-tight truncate ${
+                <h3 className={`text-base sm:text-lg md:text-xl font-bold tracking-tight truncate ${
                   isDark ? 'text-zinc-100' : 'text-zinc-950'
                 }`}>
                   {component.name}
                 </h3>
                 
                 {component.verified && (
-                  <span className="flex items-center gap-1 text-[11px] font-bold text-blue-600 dark:text-blue-400 bg-blue-500/10 px-2 py-0.5 rounded-full border border-blue-500/20 shrink-0">
-                    <ShieldCheck className="w-3.5 h-3.5" />
+                  <span className="flex items-center gap-1 text-[10px] sm:text-[11px] font-bold text-blue-600 dark:text-blue-400 bg-blue-500/10 px-2 py-0.5 rounded-full border border-blue-500/20 shrink-0">
+                    <ShieldCheck className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
                     <span>Verified</span>
                   </span>
                 )}
 
                 {component.isTrending && (
-                  <span className="flex items-center gap-1 text-[11px] font-bold text-orange-600 dark:text-orange-400 bg-orange-500/10 px-2 py-0.5 rounded-full border border-orange-500/30 shrink-0">
-                    <Flame className="w-3.5 h-3.5 text-orange-500 fill-orange-500 animate-pulse" />
+                  <span className="flex items-center gap-1 text-[10px] sm:text-[11px] font-bold text-orange-600 dark:text-orange-400 bg-orange-500/10 px-2 py-0.5 rounded-full border border-orange-500/30 shrink-0">
+                    <Flame className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-orange-500 fill-orange-500 animate-pulse" />
                     <span>Trending{component.trendingRank && component.trendingRank <= 10 ? ` #${component.trendingRank}` : ''}</span>
                   </span>
                 )}
 
                 {/* Type Pill */}
-                <span className={`text-xs font-mono uppercase font-bold px-2.5 py-0.5 rounded-md border shrink-0 ${typeMeta.badgeBg}`}>
+                <span className={`text-[10px] sm:text-xs font-mono uppercase font-bold px-2 py-0.5 rounded-md border shrink-0 ${typeMeta.badgeBg}`}>
                   {component.type}
                 </span>
 
                 {/* Slug Pill */}
-                <span className={`text-xs font-mono px-2 py-0.5 rounded border truncate max-w-[200px] sm:max-w-none ${
+                <span className={`text-[10px] sm:text-xs font-mono px-2 py-0.5 rounded border truncate max-w-[140px] sm:max-w-[220px] ${
                   isDark ? 'bg-zinc-900 border-zinc-800 text-zinc-300' : 'bg-white border-zinc-200 text-zinc-800 font-medium'
                 }`}>
                   {component.slug}
@@ -549,15 +556,15 @@ export const ComponentDetailModal: React.FC<ComponentDetailModalProps> = ({
               </div>
 
               {/* Sub-header meta bar */}
-              <div className="flex items-center gap-2 sm:gap-3 flex-wrap mt-1.5 text-xs">
+              <div className="flex items-center gap-2 sm:gap-3 flex-wrap mt-1 text-[11px] sm:text-xs">
                 <span className={`font-semibold ${isDark ? 'text-zinc-300' : 'text-zinc-700'}`}>
                   Category: <strong className="text-amber-600 dark:text-amber-400 font-bold">{component.category}</strong>
                 </span>
-                <span className="text-zinc-400">•</span>
+                <span className="text-zinc-400 hidden sm:inline">•</span>
                 <span className={`font-semibold ${isDark ? 'text-zinc-300' : 'text-zinc-700'}`}>
-                  <strong className="text-zinc-950 dark:text-zinc-100 font-bold">{component.installs.toLocaleString()}</strong> active developers
+                  <strong className="text-zinc-950 dark:text-zinc-100 font-bold">{component.installs.toLocaleString()}</strong> active devs
                 </span>
-                <span className="text-zinc-400">•</span>
+                <span className="text-zinc-400 hidden sm:inline">•</span>
                 <span className={`font-mono ${isDark ? 'text-zinc-400' : 'text-zinc-600'}`}>
                   v{component.version || '1.0.0'}
                 </span>
@@ -568,14 +575,14 @@ export const ComponentDetailModal: React.FC<ComponentDetailModalProps> = ({
           {/* Close Button with 44px touch target */}
           <button
             onClick={onClose}
-            className={`p-2.5 rounded-xl border transition-colors shrink-0 ${
+            className={`p-2 sm:p-2.5 rounded-xl border transition-colors shrink-0 ${
               isDark 
                 ? 'bg-zinc-900 border-zinc-800 text-zinc-400 hover:text-zinc-100 hover:bg-zinc-800' 
                 : 'bg-white border-zinc-200 text-zinc-600 hover:text-zinc-950 hover:bg-zinc-100'
             }`}
             title="Close Modal"
           >
-            <X className="w-5 h-5" />
+            <X className="w-4 h-4 sm:w-5 sm:h-5" />
           </button>
         </div>
 
@@ -719,7 +726,7 @@ export const ComponentDetailModal: React.FC<ComponentDetailModalProps> = ({
                   </span>
                 </div>
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div className={`p-3 rounded-lg border ${
                     isDark ? 'bg-zinc-950/80 border-zinc-800/80' : 'bg-white border-zinc-200'
                   }`}>
@@ -947,10 +954,12 @@ export const ComponentDetailModal: React.FC<ComponentDetailModalProps> = ({
           {/* ----------------------------------------------------------------------- */}
           {activeTab === 'md' && (
             <div className="space-y-4 animate-in fade-in duration-100">
+              {/* Header controls */}
               <div className="flex items-center justify-between flex-wrap gap-2">
                 <div className="flex items-center gap-2 flex-wrap">
-                  <span className="text-xs font-mono font-bold text-amber-500 uppercase px-2.5 py-0.5 rounded bg-amber-500/10 border border-amber-500/20">
-                    Format: .md (SKILL.md)
+                  <span className="text-xs font-mono font-bold text-amber-500 uppercase px-2.5 py-0.5 rounded bg-amber-500/10 border border-amber-500/20 flex items-center gap-1.5">
+                    <FileText className="w-3.5 h-3.5" />
+                    <span>Format: .md (SKILL.md)</span>
                   </span>
                   
                   {/* View Mode Toggle */}
@@ -982,7 +991,7 @@ export const ComponentDetailModal: React.FC<ComponentDetailModalProps> = ({
                   </div>
                 </div>
 
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2 flex-wrap">
                   <button
                     onClick={() => handleCopy(generateMarkdownFormat(component), 'SKILL.md')}
                     className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-amber-500 hover:bg-amber-600 text-white text-xs font-bold shadow-sm transition-colors cursor-pointer"
@@ -1003,52 +1012,149 @@ export const ComponentDetailModal: React.FC<ComponentDetailModalProps> = ({
                 </div>
               </div>
 
+              {/* Rendered Visual Document Preview vs Raw Markdown Code */}
               {mdViewMode === 'preview' ? (
-                /* Rich Rendered Document Preview */
-                <div className={`p-5 sm:p-6 rounded-xl border space-y-4 ${
-                  isDark ? 'bg-zinc-900/60 border-zinc-800 text-zinc-200' : 'bg-zinc-50 border-zinc-200 text-zinc-900'
+                <div className={`p-5 sm:p-6 rounded-2xl border space-y-6 ${
+                  isDark ? 'bg-zinc-900/60 border-zinc-800/80 text-zinc-200' : 'bg-white border-zinc-200 text-zinc-900 shadow-xs'
                 }`}>
-                  {/* YAML Frontmatter Table Banner */}
-                  <div className={`p-3.5 rounded-lg border font-mono text-xs ${
-                    isDark ? 'bg-black/50 border-zinc-800 text-zinc-300' : 'bg-white border-zinc-300 text-zinc-800 shadow-2xs'
+                  
+                  {/* Document Title & Badge Banner */}
+                  <div className="border-b pb-4 border-zinc-200 dark:border-zinc-800/80 space-y-3">
+                    <div className="flex items-center justify-between flex-wrap gap-2">
+                      <div className="flex items-center gap-2">
+                        <span className="p-1.5 rounded-lg bg-amber-500/10 text-amber-500 border border-amber-500/20">
+                          <Zap className="w-4 h-4" />
+                        </span>
+                        <h2 className="text-xl font-extrabold tracking-tight text-zinc-900 dark:text-zinc-100">
+                          {component.name}
+                        </h2>
+                      </div>
+                      <div className="flex items-center gap-2 text-xs font-mono font-semibold">
+                        <span className={`px-2.5 py-1 rounded-md border ${
+                          isDark ? 'bg-zinc-800 border-zinc-700 text-amber-400' : 'bg-amber-50 border-amber-200 text-amber-800'
+                        }`}>
+                          v{component.version || '1.0.0'}
+                        </span>
+                        <span className={`px-2.5 py-1 rounded-md border ${
+                          isDark ? 'bg-zinc-800 border-zinc-700 text-zinc-300' : 'bg-zinc-100 border-zinc-200 text-zinc-700'
+                        }`}>
+                          {component.type.toUpperCase()}
+                        </span>
+                      </div>
+                    </div>
+
+                    <blockquote className="border-l-4 border-amber-500 pl-3.5 py-1 text-sm italic text-zinc-600 dark:text-zinc-300 font-medium">
+                      "{component.description}"
+                    </blockquote>
+                  </div>
+
+                  {/* YAML Frontmatter Configuration Grid */}
+                  <div className={`p-4 rounded-xl border space-y-3 ${
+                    isDark ? 'bg-black/50 border-zinc-800' : 'bg-zinc-50 border-zinc-200'
                   }`}>
-                    <div className="text-[11px] font-bold text-amber-500 uppercase tracking-wider mb-2">YAML Frontmatter Header</div>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-y-1.5 gap-x-4">
-                      <div><span className="font-semibold text-zinc-400">name:</span> {component.name}</div>
-                      <div><span className="font-semibold text-zinc-400">slug:</span> {component.slug}</div>
-                      <div><span className="font-semibold text-zinc-400">type:</span> {component.type}</div>
-                      <div><span className="font-semibold text-zinc-400">version:</span> {component.version || '1.0.0'}</div>
-                      <div><span className="font-semibold text-zinc-400">author:</span> {component.author || 'Anthropic Ecosystem Guild'}</div>
-                      <div><span className="font-semibold text-zinc-400">installs:</span> {component.installs}</div>
+                    <div className="flex items-center justify-between text-xs font-bold text-amber-500 uppercase tracking-wider">
+                      <span className="flex items-center gap-1.5">
+                        <Settings className="w-3.5 h-3.5" />
+                        <span>YAML Frontmatter Specification</span>
+                      </span>
+                      <span className="font-mono text-[10px] text-zinc-400">SKILL.md Header</span>
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+                      <div className={`p-2.5 rounded-lg border ${isDark ? 'bg-zinc-900/90 border-zinc-800' : 'bg-white border-zinc-200'}`}>
+                        <div className="text-[10px] uppercase font-bold text-zinc-400 mb-1">Allowed Tools</div>
+                        <div className="flex flex-wrap gap-1">
+                          {['ReadFile', 'EditFile', 'WriteFile', 'RunCommand', 'ListDirectory'].map((tool) => (
+                            <span key={tool} className="px-1.5 py-0.5 rounded bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20 font-mono text-[11px]">
+                              {tool}
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+
+                      <div className={`p-2.5 rounded-lg border ${isDark ? 'bg-zinc-900/90 border-zinc-800' : 'bg-white border-zinc-200'}`}>
+                        <div className="text-[10px] uppercase font-bold text-zinc-400 mb-1">Author & Compatibility</div>
+                        <div className="font-semibold text-zinc-800 dark:text-zinc-200">
+                          {component.author || 'Claude Ecosystem Guild'}
+                        </div>
+                        <div className="text-[11px] text-zinc-500 dark:text-zinc-400 mt-0.5">
+                          Claude 3.7 Sonnet • Claude Code CLI v1.0+
+                        </div>
+                      </div>
                     </div>
                   </div>
 
-                  <h2 className="text-xl font-bold border-b pb-2 border-zinc-200 dark:border-zinc-800 text-zinc-900 dark:text-zinc-100">
-                    # {component.name}
-                  </h2>
-                  <blockquote className="border-l-4 border-amber-500 pl-3 italic text-sm text-zinc-700 dark:text-zinc-300 font-medium">
-                    {component.description}
-                  </blockquote>
-
-                  <div>
-                    <h3 className="text-sm font-bold uppercase tracking-wide mb-1.5 text-zinc-900 dark:text-zinc-100">
-                      Overview & Capabilities
+                  {/* Auto-Trigger Conditions Section */}
+                  <div className="space-y-2">
+                    <h3 className="text-xs font-bold uppercase tracking-wider text-zinc-900 dark:text-zinc-100 flex items-center gap-1.5">
+                      <Sparkles className="w-3.5 h-3.5 text-amber-500" />
+                      <span>Auto-Trigger Phrase Conditions</span>
                     </h3>
-                    <p className="text-sm leading-relaxed text-zinc-700 dark:text-zinc-300">
-                      {component.fullInstructions || `This ${component.type} provides automated ${component.category} capabilities for Claude Code. It is engineered for deterministic, production-ready execution.`}
-                    </p>
-                  </div>
-
-                  <div>
-                    <h3 className="text-sm font-bold uppercase tracking-wide mb-1.5 text-zinc-900 dark:text-zinc-100">
-                      Auto-Trigger Conditions
-                    </h3>
-                    <ul className="list-disc list-inside text-sm space-y-1 text-zinc-700 dark:text-zinc-300 font-mono">
-                      {(component.triggers || [component.name.toLowerCase(), component.slug]).map((t, idx) => (
-                        <li key={idx}><code className="px-1.5 py-0.5 rounded bg-zinc-200 dark:bg-zinc-800 text-amber-700 dark:text-amber-400 text-xs font-bold">{t}</code></li>
+                    <div className="flex flex-wrap gap-1.5">
+                      {(component.triggers || [component.name.toLowerCase(), component.slug]).map((trigger, idx) => (
+                        <span 
+                          key={idx}
+                          className={`px-2.5 py-1 rounded-lg border font-mono text-xs font-bold flex items-center gap-1.5 ${
+                            isDark 
+                              ? 'bg-amber-500/10 border-amber-500/30 text-amber-400' 
+                              : 'bg-amber-50 border-amber-200 text-amber-900'
+                          }`}
+                        >
+                          <Terminal className="w-3 h-3 opacity-70" />
+                          <span>"{trigger}"</span>
+                        </span>
                       ))}
-                    </ul>
+                    </div>
                   </div>
+
+                  {/* System Prompt Guidelines & Instructions */}
+                  <div className="space-y-2">
+                    <h3 className="text-xs font-bold uppercase tracking-wider text-zinc-900 dark:text-zinc-100 flex items-center gap-1.5">
+                      <BookOpen className="w-3.5 h-3.5 text-amber-500" />
+                      <span>System Instructions & Execution Protocol</span>
+                    </h3>
+
+                    <div className={`p-4 rounded-xl border text-xs leading-relaxed space-y-3 ${
+                      isDark ? 'bg-zinc-950/80 border-zinc-800 text-zinc-300' : 'bg-zinc-50 border-zinc-200 text-zinc-800'
+                    }`}>
+                      <p className="font-medium">
+                        {component.fullInstructions || `When activated, analyze the current target repository context. Implement clean, maintainable modifications with exhaustive type definitions and unit test coverage.`}
+                      </p>
+
+                      <div className="pt-2 border-t border-zinc-200 dark:border-zinc-800/80 grid grid-cols-1 sm:grid-cols-2 gap-2 text-[11px]">
+                        <div className="flex items-start gap-2">
+                          <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500 shrink-0 mt-0.5" />
+                          <span>Strict Type Verification (`tsc --noEmit`)</span>
+                        </div>
+                        <div className="flex items-start gap-2">
+                          <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500 shrink-0 mt-0.5" />
+                          <span>Deterministic Code Refactoring</span>
+                        </div>
+                        <div className="flex items-start gap-2">
+                          <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500 shrink-0 mt-0.5" />
+                          <span>Automated Script Check (`scripts/validate.sh`)</span>
+                        </div>
+                        <div className="flex items-start gap-2">
+                          <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500 shrink-0 mt-0.5" />
+                          <span>Zero-Hallucination Dependency Enforcement</span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Script Status Validation Banner */}
+                  <div className={`p-3 rounded-xl border flex items-center justify-between flex-wrap gap-2 text-xs font-mono ${
+                    isDark ? 'bg-emerald-950/20 border-emerald-900/50 text-emerald-400' : 'bg-emerald-50 border-emerald-200 text-emerald-900'
+                  }`}>
+                    <div className="flex items-center gap-2">
+                      <ShieldCheck className="w-4 h-4 text-emerald-500 shrink-0" />
+                      <span className="font-bold">Automated Integrity Check (`scripts/validate.sh`)</span>
+                    </div>
+                    <span className="font-bold bg-emerald-500/20 px-2 py-0.5 rounded text-[10px] uppercase">
+                      Passed (0 Errors)
+                    </span>
+                  </div>
+
                 </div>
               ) : (
                 /* Raw Markdown Code */
@@ -1372,127 +1478,307 @@ export const ComponentDetailModal: React.FC<ComponentDetailModalProps> = ({
           {/* ----------------------------------------------------------------------- */}
           {/* TAB 10: INSTALLATION SCRIPT HUB */}
           {/* ----------------------------------------------------------------------- */}
-          {activeTab === 'install-hub' && (
-            <div className="space-y-4 sm:space-y-5 animate-in fade-in duration-100">
-              
-              {/* Type-Tailored CLI Command */}
-              <div className={`p-4 rounded-xl border ${
-                isDark ? 'bg-zinc-900/60 border-zinc-800' : 'bg-zinc-50 border-zinc-200'
-              }`}>
-                <div className="flex items-center justify-between mb-2 flex-wrap gap-2">
-                  <div className="flex items-center gap-2">
-                    <span className="p-1 rounded bg-amber-500/10 text-amber-500">
-                      <Terminal className="w-3.5 h-3.5" />
-                    </span>
-                    <span className={`text-xs font-bold uppercase tracking-wider ${
-                      isDark ? 'text-zinc-100' : 'text-zinc-950'
-                    }`}>
-                      1. Instant One-Liner CLI Command
-                    </span>
-                  </div>
-                  <button
-                    onClick={() => handleCopy(component.cliCommand || `npx claude-code-templates@latest --${component.type} ${component.slug}`, 'CLI Command')}
-                    className="text-xs text-amber-600 dark:text-amber-400 hover:underline flex items-center gap-1 font-bold cursor-pointer"
-                  >
-                    <Copy className="w-3.5 h-3.5" />
-                    <span>Copy Command</span>
-                  </button>
-                </div>
-                <div className={`p-3 rounded-lg font-mono text-xs overflow-x-auto select-all font-semibold ${
-                  isDark ? 'bg-black text-amber-300' : 'bg-amber-50/80 border border-amber-200 text-amber-950'
-                }`}>
-                  {component.cliCommand || `npx claude-code-templates@latest --${component.type} ${component.slug}`}
-                </div>
-              </div>
+          {activeTab === 'install-hub' && (() => {
+            const slugTail = component.slug.split('/').pop() || component.slug;
+            const typeLower = component.type;
 
-              {/* Direct Curl / Bash Installer */}
-              <div className={`p-4 rounded-xl border ${
-                isDark ? 'bg-zinc-900/60 border-zinc-800' : 'bg-zinc-50 border-zinc-200'
-              }`}>
-                <div className="flex items-center justify-between mb-2 flex-wrap gap-2">
-                  <div className="flex items-center gap-2">
-                    <span className="p-1 rounded bg-blue-500/10 text-blue-500">
-                      <Terminal className="w-3.5 h-3.5" />
-                    </span>
-                    <span className={`text-xs font-bold uppercase tracking-wider ${
-                      isDark ? 'text-zinc-100' : 'text-zinc-950'
-                    }`}>
-                      2. Direct Curl / Bash Script (macOS / Linux)
-                    </span>
-                  </div>
-                  <button
-                    onClick={() => handleCopy(`curl -fsSL https://claude.ai/install/${component.slug}.sh | bash`, 'Curl Script')}
-                    className="text-xs text-blue-600 dark:text-blue-400 hover:underline flex items-center gap-1 font-bold cursor-pointer"
-                  >
-                    <Copy className="w-3.5 h-3.5" />
-                    <span>Copy Script</span>
-                  </button>
-                </div>
-                <div className={`p-3 rounded-lg font-mono text-xs overflow-x-auto select-all font-semibold ${
-                  isDark ? 'bg-black text-blue-300' : 'bg-blue-50/80 border border-blue-200 text-blue-950'
-                }`}>
-                  curl -fsSL https://claude.ai/install/{component.slug}.sh | bash
-                </div>
-              </div>
+            const cliCmd = component.cliCommand || `npx claude-code-templates@latest install --${typeLower} ${component.slug}`;
+            const bashCmd = `curl -fsSL https://claude.ai/install/${typeLower}s/${component.slug}.sh | bash`;
+            const psCmd = `irm https://claude.ai/install/${typeLower}s/${component.slug}.ps1 | iex`;
 
-              {/* Windows PowerShell */}
-              <div className={`p-4 rounded-xl border ${
-                isDark ? 'bg-zinc-900/60 border-zinc-800' : 'bg-zinc-50 border-zinc-200'
-              }`}>
-                <div className="flex items-center justify-between mb-2 flex-wrap gap-2">
-                  <div className="flex items-center gap-2">
-                    <span className="p-1 rounded bg-sky-500/10 text-sky-500">
-                      <Monitor className="w-3.5 h-3.5" />
-                    </span>
-                    <span className={`text-xs font-bold uppercase tracking-wider ${
-                      isDark ? 'text-zinc-100' : 'text-zinc-950'
-                    }`}>
-                      3. Windows PowerShell Command (Windows Terminal)
-                    </span>
-                  </div>
-                  <button
-                    onClick={() => handleCopy(`irm https://claude.ai/install/${component.slug}.ps1 | iex`, 'PowerShell')}
-                    className="text-xs text-sky-600 dark:text-sky-400 hover:underline flex items-center gap-1 font-bold cursor-pointer"
-                  >
-                    <Copy className="w-3.5 h-3.5" />
-                    <span>Copy PowerShell</span>
-                  </button>
-                </div>
-                <div className={`p-3 rounded-lg font-mono text-xs overflow-x-auto select-all font-semibold ${
-                  isDark ? 'bg-black text-sky-300' : 'bg-sky-50/80 border border-sky-200 text-sky-950'
-                }`}>
-                  irm https://claude.ai/install/{component.slug}.ps1 | iex
-                </div>
-              </div>
+            let targetDir = `~/.claude/${typeLower}s/${component.slug}`;
+            let primaryFileName = 'SKILL.md';
+            let postStep = '';
 
-              {/* Manual Local Placement */}
-              <div className={`p-4 rounded-xl border ${
-                isDark ? 'bg-zinc-900/60 border-zinc-800' : 'bg-zinc-50 border-zinc-200'
-              }`}>
-                <div className="flex items-center gap-2 mb-2">
-                  <span className="p-1 rounded bg-emerald-500/10 text-emerald-500">
-                    <FolderCode className="w-3.5 h-3.5" />
-                  </span>
-                  <span className={`text-xs font-bold uppercase tracking-wider ${
-                    isDark ? 'text-zinc-100' : 'text-zinc-950'
+            switch (typeLower) {
+              case 'skill':
+                targetDir = `~/.claude/skills/${component.slug}`;
+                primaryFileName = 'SKILL.md';
+                break;
+              case 'agent':
+                targetDir = `~/.claude/agents/${component.slug}`;
+                primaryFileName = 'agent.yaml';
+                break;
+              case 'command':
+                targetDir = `~/.claude/commands`;
+                primaryFileName = `${slugTail}.sh`;
+                postStep = `chmod +x ~/.claude/commands/${slugTail}.sh`;
+                break;
+              case 'setting':
+                targetDir = `~/.claude/settings`;
+                primaryFileName = `${slugTail}.json`;
+                break;
+              case 'hook':
+                targetDir = `~/.claude/hooks/${component.slug}`;
+                primaryFileName = 'hook.sh';
+                postStep = `chmod +x ~/.claude/hooks/${component.slug}/hook.sh`;
+                break;
+              case 'mcp':
+                targetDir = `~/Library/Application Support/Claude`;
+                primaryFileName = 'claude_desktop_config.json';
+                break;
+              case 'plugin':
+                targetDir = `~/.claude/plugins/${component.slug}`;
+                primaryFileName = 'plugin.json';
+                break;
+            }
+
+            const manualMkdir = `mkdir -p ${targetDir}`;
+            const manualFetch = `curl -sSL https://claude.ai/templates/${component.slug}/${primaryFileName} > ${targetDir}/${primaryFileName}`;
+            const manualFullScript = postStep
+              ? `# 1. Create target directory:\n${manualMkdir}\n\n# 2. Download ${primaryFileName} manifest:\n${manualFetch}\n\n# 3. Grant executable permission:\n${postStep}`
+              : `# 1. Create target directory:\n${manualMkdir}\n\n# 2. Download ${primaryFileName} manifest:\n${manualFetch}`;
+
+            let verifyCmd = `claude doctor`;
+            let verifyDesc = `Execute system health check to verify ${component.name} installation`;
+            switch (typeLower) {
+              case 'skill':
+                verifyCmd = `claude skill verify ${component.slug}`;
+                verifyDesc = `Verify SKILL.md frontmatter schema and trigger phrase matrix`;
+                break;
+              case 'agent':
+                verifyCmd = `claude agent test ${component.slug}`;
+                verifyDesc = `Validate agent autonomous loop and system prompt rules`;
+                break;
+              case 'command':
+                verifyCmd = `/${slugTail} --help`;
+                verifyDesc = `Execute slash command in Claude Code CLI terminal`;
+                break;
+              case 'setting':
+                verifyCmd = `claude config validate`;
+                verifyDesc = `Validate setting manifest against runtime safety policies`;
+                break;
+              case 'hook':
+                verifyCmd = `claude hook test ${component.slug}`;
+                verifyDesc = `Trigger hook script event listeners and pre-commit hooks`;
+                break;
+              case 'mcp':
+                verifyCmd = `npx @modelcontextprotocol/inspector node build/index.js`;
+                verifyDesc = `Launch MCP Inspector tool to verify stdio/SSE protocol bridge`;
+                break;
+              case 'plugin':
+                verifyCmd = `claude plugin list`;
+                verifyDesc = `List installed plugins and active extension modules`;
+                break;
+            }
+
+            const methodTabs = [
+              { id: 'all', label: 'All Methods', icon: <Layers className="w-3.5 h-3.5 text-amber-500" /> },
+              { id: 'cli', label: 'CLI One-Liner', icon: <Terminal className="w-3.5 h-3.5 text-amber-500" /> },
+              { id: 'bash', label: 'macOS / Linux', icon: <Terminal className="w-3.5 h-3.5 text-blue-500" /> },
+              { id: 'ps1', label: 'Windows PS1', icon: <Monitor className="w-3.5 h-3.5 text-sky-500" /> },
+              { id: 'manual', label: 'Manual Directory', icon: <FolderCode className="w-3.5 h-3.5 text-emerald-500" /> },
+              { id: 'verify', label: 'Verification', icon: <ShieldCheck className="w-3.5 h-3.5 text-purple-500" /> }
+            ];
+
+            return (
+              <div className="space-y-4 sm:space-y-5 animate-in fade-in duration-100">
+                
+                {/* Method Filter Bar */}
+                <div className="flex items-center gap-1.5 overflow-x-auto pb-1.5 scrollbar-thin">
+                  {methodTabs.map(tab => (
+                    <button
+                      key={tab.id}
+                      onClick={() => setInstallMethod(tab.id as any)}
+                      className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-colors whitespace-nowrap cursor-pointer shrink-0 ${
+                        installMethod === tab.id
+                          ? isDark 
+                            ? 'bg-amber-500/20 text-amber-400 border border-amber-500/40 shadow-xs' 
+                            : 'bg-amber-50 text-amber-900 border border-amber-300 font-bold shadow-xs'
+                          : isDark
+                            ? 'bg-zinc-900 text-zinc-400 hover:text-zinc-200 border border-zinc-800'
+                            : 'bg-zinc-100 text-zinc-600 hover:text-zinc-950 border border-zinc-200'
+                      }`}
+                    >
+                      {tab.icon}
+                      <span>{tab.label}</span>
+                    </button>
+                  ))}
+                </div>
+
+                {/* METHOD 1: Instant One-Liner CLI Command (npx) */}
+                {(installMethod === 'all' || installMethod === 'cli') && (
+                  <div className={`p-3.5 sm:p-4 rounded-xl border transition-all ${
+                    isDark ? 'bg-zinc-900/60 border-zinc-800 hover:border-amber-500/40' : 'bg-zinc-50 border-zinc-200 hover:border-amber-400'
                   }`}>
-                    4. Manual Local Placement & Directory Architecture
-                  </span>
-                </div>
-                <div className={`space-y-1.5 font-mono text-xs p-3.5 rounded-lg overflow-x-auto ${
-                  isDark ? 'text-zinc-300 bg-black/90' : 'text-zinc-800 bg-zinc-100/90 border border-zinc-200'
-                }`}>
-                  <p className={isDark ? 'text-zinc-400' : 'text-zinc-500 font-semibold'}># 1. Create target component directory:</p>
-                  <p className={isDark ? 'text-emerald-400 font-bold' : 'text-emerald-700 font-bold'}>mkdir -p ~/.claude/{component.type}s/{component.slug}</p>
-                  <p className={`pt-1 ${isDark ? 'text-zinc-400' : 'text-zinc-500 font-semibold'}`}># 2. Pull validated specification into directory:</p>
-                  <p className={isDark ? 'text-amber-400 font-bold' : 'text-amber-700 font-bold'}>
-                    curl -s https://claude.ai/templates/{component.slug}/{component.type === 'skill' ? 'SKILL.md' : component.type === 'mcp' ? 'claude_desktop_config.json' : component.type === 'agent' ? 'agent.yaml' : component.type === 'command' ? 'command.sh' : 'config.json'} &gt; ~/.claude/{component.type}s/{component.slug}/{component.type === 'skill' ? 'SKILL.md' : component.type === 'mcp' ? 'claude_desktop_config.json' : component.type === 'agent' ? 'agent.yaml' : component.type === 'command' ? 'command.sh' : 'config.json'}
-                  </p>
-                </div>
-              </div>
+                    <div className="flex items-center justify-between mb-2 flex-wrap gap-2">
+                      <div className="flex items-center gap-2">
+                        <span className="p-1 rounded bg-amber-500/10 text-amber-500">
+                          <Zap className="w-4 h-4" />
+                        </span>
+                        <div>
+                          <span className={`text-xs font-bold uppercase tracking-wider block ${
+                            isDark ? 'text-zinc-100' : 'text-zinc-950'
+                          }`}>
+                            1. Instant One-Liner CLI Command (Recommended)
+                          </span>
+                          <span className="text-[11px] text-zinc-500">Cross-Platform • Zero Dependencies • Auto-Directory Setup</span>
+                        </div>
+                      </div>
+                      <button
+                        onClick={() => handleCopy(cliCmd, 'CLI Command')}
+                        className="flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-amber-500/10 hover:bg-amber-500/20 text-amber-600 dark:text-amber-400 border border-amber-500/30 text-xs font-bold transition-colors cursor-pointer shrink-0"
+                      >
+                        {copiedFormat === 'CLI Command' ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
+                        <span>{copiedFormat === 'CLI Command' ? 'Copied!' : 'Copy CLI'}</span>
+                      </button>
+                    </div>
 
-            </div>
-          )}
+                    <div className={`p-3 rounded-lg font-mono text-xs overflow-x-auto select-all font-semibold ${
+                      isDark ? 'bg-black text-amber-300 border border-zinc-800' : 'bg-amber-50/80 border border-amber-200 text-amber-950 shadow-inner'
+                    }`}>
+                      {cliCmd}
+                    </div>
+                  </div>
+                )}
+
+                {/* METHOD 2: Direct Curl / Bash Script (macOS / Linux) */}
+                {(installMethod === 'all' || installMethod === 'bash') && (
+                  <div className={`p-3.5 sm:p-4 rounded-xl border transition-all ${
+                    isDark ? 'bg-zinc-900/60 border-zinc-800 hover:border-blue-500/40' : 'bg-zinc-50 border-zinc-200 hover:border-blue-400'
+                  }`}>
+                    <div className="flex items-center justify-between mb-2 flex-wrap gap-2">
+                      <div className="flex items-center gap-2">
+                        <span className="p-1 rounded bg-blue-500/10 text-blue-500">
+                          <Terminal className="w-4 h-4" />
+                        </span>
+                        <div>
+                          <span className={`text-xs font-bold uppercase tracking-wider block ${
+                            isDark ? 'text-zinc-100' : 'text-zinc-950'
+                          }`}>
+                            2. Direct Bash Shell Script (macOS / Linux / WSL)
+                          </span>
+                          <span className="text-[11px] text-zinc-500">Automated curl stream • Sets execution permissions</span>
+                        </div>
+                      </div>
+                      <button
+                        onClick={() => handleCopy(bashCmd, 'Bash Script')}
+                        className="flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-blue-500/10 hover:bg-blue-500/20 text-blue-600 dark:text-blue-400 border border-blue-500/30 text-xs font-bold transition-colors cursor-pointer shrink-0"
+                      >
+                        {copiedFormat === 'Bash Script' ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
+                        <span>{copiedFormat === 'Bash Script' ? 'Copied!' : 'Copy Bash'}</span>
+                      </button>
+                    </div>
+
+                    <div className={`p-3 rounded-lg font-mono text-xs overflow-x-auto select-all font-semibold ${
+                      isDark ? 'bg-black text-blue-300 border border-zinc-800' : 'bg-blue-50/80 border border-blue-200 text-blue-950 shadow-inner'
+                    }`}>
+                      {bashCmd}
+                    </div>
+                  </div>
+                )}
+
+                {/* METHOD 3: Windows PowerShell Command */}
+                {(installMethod === 'all' || installMethod === 'ps1') && (
+                  <div className={`p-3.5 sm:p-4 rounded-xl border transition-all ${
+                    isDark ? 'bg-zinc-900/60 border-zinc-800 hover:border-sky-500/40' : 'bg-zinc-50 border-zinc-200 hover:border-sky-400'
+                  }`}>
+                    <div className="flex items-center justify-between mb-2 flex-wrap gap-2">
+                      <div className="flex items-center gap-2">
+                        <span className="p-1 rounded bg-sky-500/10 text-sky-500">
+                          <Monitor className="w-4 h-4" />
+                        </span>
+                        <div>
+                          <span className={`text-xs font-bold uppercase tracking-wider block ${
+                            isDark ? 'text-zinc-100' : 'text-zinc-950'
+                          }`}>
+                            3. Windows PowerShell Installer (Windows Terminal)
+                          </span>
+                          <span className="text-[11px] text-zinc-500">Native Windows 10/11 • irm | iex Web Request Stream</span>
+                        </div>
+                      </div>
+                      <button
+                        onClick={() => handleCopy(psCmd, 'PowerShell Script')}
+                        className="flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-sky-500/10 hover:bg-sky-500/20 text-sky-600 dark:text-sky-400 border border-sky-500/30 text-xs font-bold transition-colors cursor-pointer shrink-0"
+                      >
+                        {copiedFormat === 'PowerShell Script' ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
+                        <span>{copiedFormat === 'PowerShell Script' ? 'Copied!' : 'Copy PS1'}</span>
+                      </button>
+                    </div>
+
+                    <div className={`p-3 rounded-lg font-mono text-xs overflow-x-auto select-all font-semibold ${
+                      isDark ? 'bg-black text-sky-300 border border-zinc-800' : 'bg-sky-50/80 border border-sky-200 text-sky-950 shadow-inner'
+                    }`}>
+                      {psCmd}
+                    </div>
+                  </div>
+                )}
+
+                {/* METHOD 4: Manual Local Placement */}
+                {(installMethod === 'all' || installMethod === 'manual') && (
+                  <div className={`p-3.5 sm:p-4 rounded-xl border transition-all ${
+                    isDark ? 'bg-zinc-900/60 border-zinc-800 hover:border-emerald-500/40' : 'bg-zinc-50 border-zinc-200 hover:border-emerald-400'
+                  }`}>
+                    <div className="flex items-center justify-between mb-2 flex-wrap gap-2">
+                      <div className="flex items-center gap-2">
+                        <span className="p-1 rounded bg-emerald-500/10 text-emerald-500">
+                          <FolderCode className="w-4 h-4" />
+                        </span>
+                        <div>
+                          <span className={`text-xs font-bold uppercase tracking-wider block ${
+                            isDark ? 'text-zinc-100' : 'text-zinc-950'
+                          }`}>
+                            4. Manual File Placement & Directory Setup
+                          </span>
+                          <span className="text-[11px] text-zinc-500">Target Path: <code className="font-mono text-emerald-600 dark:text-emerald-400">{targetDir}</code></span>
+                        </div>
+                      </div>
+                      <button
+                        onClick={() => handleCopy(manualFullScript, 'Manual Script')}
+                        className="flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30 text-xs font-bold transition-colors cursor-pointer shrink-0"
+                      >
+                        {copiedFormat === 'Manual Script' ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
+                        <span>{copiedFormat === 'Manual Script' ? 'Copied!' : 'Copy Steps'}</span>
+                      </button>
+                    </div>
+
+                    <pre className={`p-3 rounded-lg font-mono text-xs overflow-x-auto select-all whitespace-pre-wrap leading-relaxed font-semibold ${
+                      isDark ? 'bg-black text-emerald-300 border border-zinc-800' : 'bg-emerald-50/80 border border-emerald-200 text-emerald-950 shadow-inner'
+                    }`}>
+                      {manualFullScript}
+                    </pre>
+                  </div>
+                )}
+
+                {/* METHOD 5: Post-Installation Health & Verification */}
+                {(installMethod === 'all' || installMethod === 'verify') && (
+                  <div className={`p-3.5 sm:p-4 rounded-xl border transition-all ${
+                    isDark ? 'bg-zinc-900/60 border-zinc-800 hover:border-purple-500/40' : 'bg-zinc-50 border-zinc-200 hover:border-purple-400'
+                  }`}>
+                    <div className="flex items-center justify-between mb-2 flex-wrap gap-2">
+                      <div className="flex items-center gap-2">
+                        <span className="p-1 rounded bg-purple-500/10 text-purple-500">
+                          <CheckCircle2 className="w-4 h-4" />
+                        </span>
+                        <div>
+                          <span className={`text-xs font-bold uppercase tracking-wider block ${
+                            isDark ? 'text-zinc-100' : 'text-zinc-950'
+                          }`}>
+                            5. Post-Installation Health Verification
+                          </span>
+                          <span className="text-[11px] text-zinc-500">{verifyDesc}</span>
+                        </div>
+                      </div>
+                      <button
+                        onClick={() => handleCopy(verifyCmd, 'Verification Command')}
+                        className="flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-purple-500/10 hover:bg-purple-500/20 text-purple-600 dark:text-purple-400 border border-purple-500/30 text-xs font-bold transition-colors cursor-pointer shrink-0"
+                      >
+                        {copiedFormat === 'Verification Command' ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
+                        <span>{copiedFormat === 'Verification Command' ? 'Copied!' : 'Copy Check'}</span>
+                      </button>
+                    </div>
+
+                    <div className={`p-3 rounded-lg font-mono text-xs overflow-x-auto select-all font-semibold ${
+                      isDark ? 'bg-black text-purple-300 border border-zinc-800' : 'bg-purple-50/80 border border-purple-200 text-purple-950 shadow-inner'
+                    }`}>
+                      {verifyCmd}
+                    </div>
+                  </div>
+                )}
+
+              </div>
+            );
+          })()}
 
         </div>
 

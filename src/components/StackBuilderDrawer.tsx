@@ -1,12 +1,7 @@
 import React, { useState } from 'react';
-import { ComponentItem, StackPreset, ComponentType, AIProvider } from '../types';
+import { ComponentItem, StackPreset, ComponentType } from '../types';
 import { STACK_PRESETS } from '../data/componentsData';
-import { 
-  generateStackExport, 
-  generateProviderStackExport, 
-  AI_PROVIDERS, 
-  getProviderMeta 
-} from '../utils/formatGenerators';
+import { generateStackExport } from '../utils/formatGenerators';
 import { 
   Layers, 
   X, 
@@ -68,7 +63,6 @@ export const StackBuilderDrawer: React.FC<StackBuilderDrawerProps> = ({
 }) => {
   const [copiedFormat, setCopiedFormat] = useState<string | null>(null);
   const [selectedFormat, setSelectedFormat] = useState<StackExportFormat>('npx');
-  const [selectedProvider, setSelectedProvider] = useState<AIProvider>('claude');
   const [selectedFilter, setSelectedFilter] = useState<'all' | ComponentType>('all');
   const [shared, setShared] = useState(false);
 
@@ -114,7 +108,7 @@ export const StackBuilderDrawer: React.FC<StackBuilderDrawerProps> = ({
   }, [allowedExportFormats, selectedFormat, selectedFilter]);
 
   const activeCodeSnippet = () => {
-    return generateProviderStackExport(stackItems, selectedProvider, selectedFormat);
+    return generateStackExport(stackItems, selectedFormat);
   };
 
   const handleCopy = () => {
@@ -731,42 +725,6 @@ export const StackBuilderDrawer: React.FC<StackBuilderDrawerProps> = ({
                   }`}>
                     {allowedExportFormats.length} {selectedFilter !== 'all' ? `${selectedFilter.toUpperCase()} Formats` : 'Formats Available'}
                   </span>
-                </div>
-
-                {/* AI Provider Switcher (Claude, Gemini, ChatGPT, Z.AI, OpenCode, DeepSeek, OX Alpha) */}
-                <div className="space-y-1.5 pt-1">
-                  <div className="flex items-center justify-between text-[11px]">
-                    <span className={`font-semibold ${isDark ? 'text-zinc-300' : 'text-zinc-700'}`}>
-                      Target Ecosystem:
-                    </span>
-                    <span className={`font-mono font-bold text-[10px] ${getProviderMeta(selectedProvider).color}`}>
-                      {getProviderMeta(selectedProvider).name} ({getProviderMeta(selectedProvider).badge})
-                    </span>
-                  </div>
-                  
-                  <div className={`flex items-center rounded-xl p-1 text-xs overflow-x-auto gap-1 border shrink-0 scrollbar-none transition-colors ${
-                    isDark ? 'bg-zinc-950 border-zinc-800' : 'bg-zinc-100 border-zinc-200'
-                  }`}>
-                    {AI_PROVIDERS.map((prov) => {
-                      const isSelected = selectedProvider === prov.id;
-                      return (
-                        <button
-                          key={prov.id}
-                          onClick={() => setSelectedProvider(prov.id)}
-                          className={`px-2.5 py-1.5 rounded-lg transition-all flex items-center gap-1.5 whitespace-nowrap cursor-pointer min-h-[32px] text-xs ${
-                            isSelected
-                              ? `bg-gradient-to-r ${prov.activeColor} text-white font-bold shadow-xs`
-                              : isDark
-                                ? 'text-zinc-400 hover:text-zinc-100 hover:bg-zinc-850 font-medium'
-                                : 'text-zinc-600 hover:text-zinc-950 hover:bg-zinc-200 font-medium'
-                          }`}
-                        >
-                          <span className={`w-1.5 h-1.5 rounded-full ${isSelected ? 'bg-white' : prov.color.replace('text-', 'bg-')}`} />
-                          <span>{prov.shortName}</span>
-                        </button>
-                      );
-                    })}
-                  </div>
                 </div>
 
                 {/* Format Switcher Tabs Bar (Horizontal Scrollable) */}

@@ -1,5 +1,3 @@
-export type ThemeMode = 'light' | 'dark' | 'system';
-
 export type ComponentType =
   | 'skill'
   | 'agent'
@@ -9,28 +7,7 @@ export type ComponentType =
   | 'mcp'
   | 'plugin';
 
-export type AIProvider =
-  | 'claude'
-  | 'gemini'
-  | 'chatgpt'
-  | 'zai'
-  | 'opencode'
-  | 'deepseek'
-  | 'oxalpha';
-
-export interface ProviderMeta {
-  id: AIProvider;
-  name: string;
-  shortName: string;
-  tagline: string;
-  badge: string;
-  cliTool: string;
-  color: string;
-  borderColor: string;
-  bgColor: string;
-  activeColor: string;
-  docUrl: string;
-}
+export type ThemeMode = 'light' | 'dark' | 'system';
 
 export type Category =
   | 'all'
@@ -90,4 +67,3 @@ export interface StackPreset {
   itemSlugs: string[];
   badge?: string;
 }
-

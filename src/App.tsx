@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useEffect } from 'react';
-import { ComponentItem, ComponentType, Category, StackPreset, ThemeMode, AIProvider } from './types';
+import { ComponentItem, ComponentType, Category, StackPreset, ThemeMode } from './types';
 import { 
   INITIAL_COMPONENTS, 
   PROMPT_DEFAULT_STACK_SLUGS, 
@@ -38,12 +38,12 @@ import {
 } from 'lucide-react';
 
 export default function App() {
-  // Theme state: 'light' | 'dark' | 'system'
+  // Theme mode state: 'light' | 'dark' | 'system'
   const [themeMode, setThemeMode] = useState<ThemeMode>(() => {
     try {
-      const saved = localStorage.getItem('claude_code_theme_mode');
+      const saved = localStorage.getItem('claude_code_theme_mode') as ThemeMode;
       if (saved === 'light' || saved === 'dark' || saved === 'system') {
-        return saved as ThemeMode;
+        return saved;
       }
     } catch {
       // Fallback
@@ -51,32 +51,30 @@ export default function App() {
     return 'system';
   });
 
-  // Calculate actual dark state
+  // Effective isDark state
   const [isDark, setIsDark] = useState<boolean>(() => {
-    if (themeMode === 'dark') return true;
-    if (themeMode === 'light') return false;
+    try {
+      const saved = localStorage.getItem('claude_code_theme_mode') as ThemeMode;
+      if (saved === 'light') return false;
+      if (saved === 'dark') return true;
+    } catch {}
     return window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
   });
 
-  // Apply dark mode class to html element and listen to OS preference changes
+  // Handle theme mode changes & system preference listener
   useEffect(() => {
-    try {
-      localStorage.setItem('claude_code_theme_mode', themeMode);
-    } catch {
-      // Ignore
-    }
-
     const applyTheme = () => {
-      let dark = false;
-      if (themeMode === 'dark') {
-        dark = true;
-      } else if (themeMode === 'light') {
-        dark = false;
+      let activeDark = false;
+      if (themeMode === 'light') {
+        activeDark = false;
+      } else if (themeMode === 'dark') {
+        activeDark = true;
       } else {
-        dark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+        activeDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
       }
-      setIsDark(dark);
-      if (dark) {
+
+      setIsDark(activeDark);
+      if (activeDark) {
         document.documentElement.classList.add('dark');
       } else {
         document.documentElement.classList.remove('dark');
@@ -85,15 +83,26 @@ export default function App() {
 
     applyTheme();
 
+    try {
+      localStorage.setItem('claude_code_theme_mode', themeMode);
+    } catch {
+      // Ignore
+    }
+
     if (themeMode === 'system') {
       const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
-      const listener = () => applyTheme();
+      const handleSystemChange = (e: MediaQueryListEvent) => {
+        setIsDark(e.matches);
+        if (e.matches) {
+          document.documentElement.classList.add('dark');
+        } else {
+          document.documentElement.classList.remove('dark');
+        }
+      };
+
       if (mediaQuery.addEventListener) {
-        mediaQuery.addEventListener('change', listener);
-        return () => mediaQuery.removeEventListener('change', listener);
-      } else if (mediaQuery.addListener) {
-        mediaQuery.addListener(listener);
-        return () => mediaQuery.removeListener(listener);
+        mediaQuery.addEventListener('change', handleSystemChange);
+        return () => mediaQuery.removeEventListener('change', handleSystemChange);
       }
     }
   }, [themeMode]);
@@ -168,7 +177,6 @@ export default function App() {
   const [activeType, setActiveType] = useState<ComponentType | 'all'>('all');
   const [isFavoritesOnly, setIsFavoritesOnly] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState<Category>('all');
-  const [selectedProvider, setSelectedProvider] = useState<AIProvider | 'all'>('all');
   const [searchQuery, setSearchQuery] = useState('');
   const [sortBy, setSortBy] = useState<'popular' | 'trending' | 'installs' | 'alpha' | 'newest'>('popular');
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
@@ -270,7 +278,7 @@ export default function App() {
   // Reset page on filter change
   useEffect(() => {
     setCurrentPage(1);
-  }, [activeType, isFavoritesOnly, selectedCategory, selectedProvider, searchQuery, sortBy]);
+  }, [activeType, isFavoritesOnly, selectedCategory, searchQuery, sortBy]);
 
   // Stack items resolved objects
   const stackItems = useMemo(() => {
@@ -381,9 +389,10 @@ export default function App() {
         typeCounts={typeCounts}
         searchQuery={searchQuery}
         onSearchChange={setSearchQuery}
+        isDark={isDark}
         themeMode={themeMode}
         onSelectThemeMode={setThemeMode}
-        isDark={isDark}
+        onToggleTheme={() => setThemeMode(prev => prev === 'dark' ? 'light' : 'dark')}
         stackCount={stackItems.length}
         onOpenStack={() => setIsStackOpen(true)}
         onOpenDocs={() => setIsDocsOpen(true)}
@@ -473,8 +482,8 @@ export default function App() {
         <FilterBar
           selectedCategory={selectedCategory}
           onSelectCategory={(cat) => { setSelectedCategory(cat); setCurrentPage(1); }}
-          selectedProvider={selectedProvider}
-          onSelectProvider={(prov) => { setSelectedProvider(prov); setCurrentPage(1); }}
+          activeType={activeType}
+          searchQuery={searchQuery}
           sortBy={sortBy}
           onSortChange={setSortBy}
           viewMode={viewMode}
@@ -484,13 +493,13 @@ export default function App() {
           isDark={isDark}
           activeFilterCount={
             (selectedCategory !== 'all' ? 1 : 0) + 
-            (selectedProvider !== 'all' ? 1 : 0) +
             (searchQuery ? 1 : 0) +
-            (isFavoritesOnly ? 1 : 0)
+            (isFavoritesOnly ? 1 : 0) +
+            (activeType !== 'all' ? 1 : 0)
           }
           onResetFilters={() => {
             setSelectedCategory('all');
-            setSelectedProvider('all');
+            setActiveType('all');
             setSearchQuery('');
             setIsFavoritesOnly(false);
             setCurrentPage(1);
@@ -511,13 +520,12 @@ export default function App() {
             <p className={`text-xs mt-1 max-w-md mx-auto ${isDark ? 'text-zinc-400' : 'text-zinc-500'}`}>
               {isFavoritesOnly
                 ? "You haven't added any favorites yet. Click the star icon on any component card to add it to your Workspace storage!"
-                : "Try clearing your search query or switching to a different category, AI provider, or component type tab."}
+                : "Try clearing your search query or switching to a different category or component type tab."}
             </p>
             <button
               onClick={() => {
                 setSearchQuery('');
                 setSelectedCategory('all');
-                setSelectedProvider('all');
                 setActiveType('all');
                 setIsFavoritesOnly(false);
               }}
@@ -544,7 +552,6 @@ export default function App() {
                 isDark={isDark}
                 viewMode={viewMode}
                 onCopyCli={(cmd) => handleCopyCli(cmd, comp.id)}
-                selectedProvider={selectedProvider}
               />
             ))}
           </div>
@@ -648,7 +655,6 @@ export default function App() {
         onToggleStack={handleToggleStack}
         isDark={isDark}
         onNotify={showToast}
-        initialProvider={selectedProvider !== 'all' ? selectedProvider : 'claude'}
       />
 
       {/* Prompt Tester Simulator Modal */}

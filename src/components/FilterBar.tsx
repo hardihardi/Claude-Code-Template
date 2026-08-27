@@ -1,14 +1,12 @@
 import React from 'react';
-import { Category, AIProvider } from '../types';
+import { Category, ComponentType } from '../types';
 import { CATEGORIES_LIST } from '../data/componentsData';
-import { AI_PROVIDERS, getProviderMeta } from '../utils/formatGenerators';
-import { LayoutGrid, List, Plus, ArrowUpDown, Filter, X, Cpu, Sparkles } from 'lucide-react';
+import { LayoutGrid, List, Plus, ArrowUpDown, Filter, X } from 'lucide-react';
 
 interface FilterBarProps {
   selectedCategory: Category;
   onSelectCategory: (cat: Category) => void;
-  selectedProvider: AIProvider | 'all';
-  onSelectProvider: (provider: AIProvider | 'all') => void;
+  activeType?: ComponentType | 'all';
   sortBy: 'popular' | 'trending' | 'installs' | 'alpha' | 'newest';
   onSortChange: (sort: 'popular' | 'trending' | 'installs' | 'alpha' | 'newest') => void;
   viewMode: 'grid' | 'list';
@@ -18,13 +16,13 @@ interface FilterBarProps {
   isDark: boolean;
   activeFilterCount: number;
   onResetFilters: () => void;
+  searchQuery?: string;
 }
 
 export const FilterBar: React.FC<FilterBarProps> = ({
   selectedCategory,
   onSelectCategory,
-  selectedProvider,
-  onSelectProvider,
+  activeType = 'all',
   sortBy,
   onSortChange,
   viewMode,
@@ -33,134 +31,97 @@ export const FilterBar: React.FC<FilterBarProps> = ({
   onAddPageToStack,
   isDark,
   activeFilterCount,
-  onResetFilters
+  onResetFilters,
+  searchQuery = ''
 }) => {
+  // Determine dynamic section title based on active type / category / search
+  const getSectionTitle = () => {
+    if (searchQuery.trim()) {
+      return `Search: "${searchQuery}"`;
+    }
+    if (activeType !== 'all') {
+      switch (activeType) {
+        case 'skill':
+          return 'Skills';
+        case 'agent':
+          return 'Agents';
+        case 'command':
+          return 'Commands';
+        case 'setting':
+          return 'Settings';
+        case 'hook':
+          return 'Hooks';
+        case 'mcp':
+          return 'MCPs (Model Context Protocols)';
+        case 'plugin':
+          return 'Plugins';
+        default:
+          return activeType;
+      }
+    }
+    if (selectedCategory !== 'all') {
+      return CATEGORIES_LIST.find((c) => c.id === selectedCategory)?.label || 'Filtered Components';
+    }
+    return 'Most Popular';
+  };
+
   return (
-    <div className="space-y-3 sm:space-y-4 mb-6">
-      
-      {/* Category Pills Bar - Touch optimized scroll */}
-      <div className="flex items-center gap-1.5 sm:gap-2 overflow-x-auto pb-2 scrollbar-none -mx-4 px-4 sm:mx-0 sm:px-0">
-        <div className={`flex items-center gap-1.5 text-xs font-semibold px-2 py-1 shrink-0 ${
-          isDark ? 'text-zinc-400' : 'text-zinc-500'
+    <div className="space-y-3 mb-6">
+      {/* Active Filter Chips Bar (Shown only when filters like search or custom category/type are active) */}
+      {activeFilterCount > 0 && (
+        <div className={`flex items-center justify-between gap-2 px-3.5 py-2 rounded-xl border text-xs transition-all ${
+          isDark ? 'bg-zinc-900/90 border-zinc-800 text-zinc-300' : 'bg-zinc-50 border-zinc-200 text-zinc-700'
         }`}>
-          <Filter className="w-3.5 h-3.5" />
-          <span>Category:</span>
-        </div>
+          <div className="flex items-center gap-2 flex-wrap min-w-0">
+            <span className="font-semibold text-amber-500 flex items-center gap-1 text-[11px] uppercase tracking-wider">
+              <Filter className="w-3.5 h-3.5" />
+              Active Filters:
+            </span>
+            {searchQuery && (
+              <span className={`px-2.5 py-0.5 rounded-md font-medium text-[11px] truncate max-w-[200px] ${
+                isDark ? 'bg-zinc-800 text-amber-400 border border-zinc-700' : 'bg-amber-100 text-amber-900 border border-amber-200'
+              }`}>
+                Search: "{searchQuery}"
+              </span>
+            )}
+            {activeType !== 'all' && (
+              <span className={`px-2.5 py-0.5 rounded-md font-medium text-[11px] capitalize ${
+                isDark ? 'bg-zinc-800 text-amber-400 border border-zinc-700' : 'bg-amber-100 text-amber-900 border border-amber-200'
+              }`}>
+                Type: {activeType}
+              </span>
+            )}
+            {selectedCategory !== 'all' && (
+              <span className={`px-2.5 py-0.5 rounded-md font-medium text-[11px] ${
+                isDark ? 'bg-zinc-800 text-amber-400 border border-zinc-700' : 'bg-amber-100 text-amber-900 border border-amber-200'
+              }`}>
+                Category: {CATEGORIES_LIST.find((c) => c.id === selectedCategory)?.label || selectedCategory}
+              </span>
+            )}
+          </div>
 
-        {CATEGORIES_LIST.map((cat) => {
-          const isSelected = selectedCategory === cat.id;
-          return (
-            <button
-              key={cat.id}
-              onClick={() => onSelectCategory(cat.id as Category)}
-              className={`px-3 py-1.5 rounded-lg text-xs font-medium whitespace-nowrap transition-all duration-150 border shrink-0 min-h-[36px] cursor-pointer ${
-                isSelected
-                  ? isDark
-                    ? 'bg-amber-500/10 border-amber-500/40 text-amber-400 font-semibold shadow-xs'
-                    : 'bg-amber-100 border-amber-400 text-zinc-950 font-bold shadow-xs'
-                  : isDark
-                    ? 'bg-zinc-900/60 border-zinc-800 text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800/80'
-                    : 'bg-white border-zinc-200 text-zinc-800 hover:text-zinc-950 hover:bg-zinc-50 font-medium'
-              }`}
-            >
-              {cat.label}
-            </button>
-          );
-        })}
-
-        {activeFilterCount > 0 && (
           <button
             onClick={onResetFilters}
-            className={`flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-medium border text-red-500 transition-colors shrink-0 min-h-[36px] cursor-pointer ${
-              isDark ? 'border-red-900/40 bg-red-950/20 hover:bg-red-950/40' : 'border-red-200 bg-red-50/50 hover:bg-red-50'
+            className={`flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-semibold border text-red-500 hover:text-red-600 transition-colors shrink-0 cursor-pointer ${
+              isDark ? 'border-red-900/40 bg-red-950/20 hover:bg-red-950/40' : 'border-red-200 bg-red-50/70 hover:bg-red-100'
             }`}
             title="Reset active filters"
           >
             <X className="w-3 h-3" />
-            <span>Reset</span>
+            <span>Reset All</span>
           </button>
-        )}
-      </div>
-
-      {/* AI Provider Ecosystem Filter Bar */}
-      <div className="flex items-center gap-1.5 sm:gap-2 overflow-x-auto pb-2 scrollbar-none -mx-4 px-4 sm:mx-0 sm:px-0">
-        <div className={`flex items-center gap-1.5 text-xs font-semibold px-2 py-1 shrink-0 ${
-          isDark ? 'text-zinc-400' : 'text-zinc-500'
-        }`}>
-          <Cpu className="w-3.5 h-3.5 text-amber-500" />
-          <span>AI Provider:</span>
         </div>
+      )}
 
-        <button
-          onClick={() => onSelectProvider('all')}
-          className={`px-3 py-1.5 rounded-lg text-xs font-medium whitespace-nowrap transition-all duration-150 border shrink-0 min-h-[36px] cursor-pointer flex items-center gap-1.5 ${
-            selectedProvider === 'all'
-              ? isDark
-                ? 'bg-amber-500/10 border-amber-500/50 text-amber-400 font-bold shadow-xs ring-1 ring-amber-500/30'
-                : 'bg-zinc-900 border-zinc-950 text-white font-bold shadow-xs'
-              : isDark
-                ? 'bg-zinc-900/60 border-zinc-800 text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800/80'
-                : 'bg-white border-zinc-200 text-zinc-800 hover:text-zinc-950 hover:bg-zinc-50 font-medium'
-          }`}
-        >
-          <Sparkles className="w-3.5 h-3.5 text-amber-500" />
-          <span>All Providers</span>
-        </button>
-
-        {AI_PROVIDERS.map((provider) => {
-          const isSelected = selectedProvider === provider.id;
-          return (
-            <button
-              key={provider.id}
-              onClick={() => onSelectProvider(provider.id)}
-              className={`px-3 py-1.5 rounded-lg text-xs font-medium whitespace-nowrap transition-all duration-150 border shrink-0 min-h-[36px] cursor-pointer flex items-center gap-1.5 ${
-                isSelected
-                  ? isDark
-                    ? `${provider.bgColor} ${provider.borderColor} ${provider.color} font-bold shadow-xs ring-1 ring-current`
-                    : `${provider.bgColor} ${provider.borderColor} text-zinc-950 font-bold shadow-xs ring-1 ring-zinc-300`
-                  : isDark
-                    ? 'bg-zinc-900/60 border-zinc-800 text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800/80'
-                    : 'bg-white border-zinc-200 text-zinc-800 hover:text-zinc-950 hover:bg-zinc-50 font-medium'
-              }`}
-            >
-              <span className={`w-2 h-2 rounded-full ${
-                provider.id === 'claude' ? 'bg-amber-500' :
-                provider.id === 'gemini' ? 'bg-blue-500' :
-                provider.id === 'chatgpt' ? 'bg-emerald-500' :
-                provider.id === 'zai' ? 'bg-purple-500' :
-                provider.id === 'opencode' ? 'bg-cyan-500' :
-                provider.id === 'deepseek' ? 'bg-indigo-500' :
-                'bg-pink-500'
-              }`} />
-              <span>{provider.shortName}</span>
-            </button>
-          );
-        })}
-      </div>
-
-      {/* Action and Sort Bar */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-3 border-t border-zinc-200/80 dark:border-zinc-800/60">
+      {/* Main Action and Sort Bar */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-1 border-t border-zinc-200/80 dark:border-zinc-800/60">
         
         {/* Count & Header */}
         <div className="flex items-center justify-between sm:justify-start gap-3">
-          <h3 className={`text-base sm:text-lg font-bold tracking-tight flex items-center gap-2 flex-wrap ${
+          <h3 className={`text-base sm:text-lg font-bold tracking-tight ${
             isDark ? 'text-zinc-100' : 'text-zinc-900'
           }`}>
-            <span>
-              {selectedCategory === 'all'
-                ? selectedProvider === 'all'
-                  ? 'Most Popular'
-                  : `Most Popular (${getProviderMeta(selectedProvider).shortName})`
-                : CATEGORIES_LIST.find(c => c.id === selectedCategory)?.label
-              }
-            </span>
-            {selectedProvider !== 'all' && (
-              <span className={`text-xs px-2.5 py-0.5 rounded-full border font-mono font-semibold ${
-                getProviderMeta(selectedProvider).bgColor
-              } ${getProviderMeta(selectedProvider).borderColor} ${getProviderMeta(selectedProvider).color}`}>
-                {getProviderMeta(selectedProvider).shortName} Ecosystem
-              </span>
-            )}
+            {getSectionTitle()}
           </h3>
           <span className={`text-xs font-medium px-2.5 py-0.5 rounded-full border ${
             isDark ? 'bg-zinc-800/80 text-zinc-400 border-zinc-700/60' : 'bg-zinc-100 text-zinc-600 border-zinc-200'

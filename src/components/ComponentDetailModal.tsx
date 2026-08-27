@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { ComponentItem, ComponentType, AIProvider } from '../types';
+import { ComponentItem, ComponentType } from '../types';
 import { 
   generateMarkdownFormat, 
   generateMcpFormat, 
@@ -9,16 +9,7 @@ import {
   generatePowerShellScript,
   generateDockerScript,
   generateEnvFormat,
-  generateFastMcpCode,
-  AI_PROVIDERS,
-  getProviderMeta,
-  getProviderInstallCommand,
-  getProviderTargetPlacement,
-  getProviderCurlScript,
-  getProviderPowerShell,
-  getProviderConfigSnippet,
-  getProviderVerificationCommand,
-  getProviderFileName
+  generateFastMcpCode
 } from '../utils/formatGenerators';
 import { 
   X, 
@@ -66,7 +57,6 @@ interface ComponentDetailModalProps {
   onToggleStack: (item: ComponentItem) => void;
   isDark: boolean;
   onNotify: (msg: string) => void;
-  initialProvider?: AIProvider;
 }
 
 type FormatCategory = 'overview' | 'md' | 'mcp' | 'json' | 'yaml' | 'sh' | 'ps1' | 'docker' | 'env' | 'install-hub';
@@ -78,11 +68,9 @@ export const ComponentDetailModal: React.FC<ComponentDetailModalProps> = ({
   isInStack,
   onToggleStack,
   isDark,
-  onNotify,
-  initialProvider = 'claude'
+  onNotify
 }) => {
   const [activeTab, setActiveTab] = useState<FormatCategory>('overview');
-  const [selectedProvider, setSelectedProvider] = useState<AIProvider>(initialProvider);
   const [mdViewMode, setMdViewMode] = useState<'preview' | 'raw'>('preview');
   const [mcpViewMode, setMcpViewMode] = useState<'desktop-config' | 'fastmcp-python'>('desktop-config');
   const [testPrompt, setTestPrompt] = useState('');
@@ -93,11 +81,10 @@ export const ComponentDetailModal: React.FC<ComponentDetailModalProps> = ({
   useEffect(() => {
     if (component) {
       setActiveTab('overview');
-      setSelectedProvider(initialProvider);
       setTestResult(null);
       setTestPrompt('');
     }
-  }, [component?.id, isOpen, initialProvider]);
+  }, [component?.id, isOpen]);
 
   // Type-specific allowed formats mapping (strictly separated per tool type)
   const TYPE_FORMAT_MAP: Record<ComponentType, FormatCategory[]> = {
@@ -323,19 +310,6 @@ export const ComponentDetailModal: React.FC<ComponentDetailModalProps> = ({
       'install-hub': 'install-instructions.txt'
     };
     const filename = extensions[format] || 'download.txt';
-    const blob = new Blob([content], { type: 'text/plain;charset=utf-8' });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = filename;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    URL.revokeObjectURL(url);
-    onNotify(`Downloaded ${filename}!`);
-  };
-
-  const handleDirectDownload = (filename: string, content: string) => {
     const blob = new Blob([content], { type: 'text/plain;charset=utf-8' });
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
@@ -1396,112 +1370,16 @@ export const ComponentDetailModal: React.FC<ComponentDetailModalProps> = ({
           )}
 
           {/* ----------------------------------------------------------------------- */}
-          {/* TAB 10: INSTALLATION SCRIPT HUB (Multi-Provider Support: Claude, Gemini, ChatGPT, Z.AI, OpenCode, DeepSeek, OX Alpha) */}
+          {/* TAB 10: INSTALLATION SCRIPT HUB */}
           {/* ----------------------------------------------------------------------- */}
           {activeTab === 'install-hub' && (
             <div className="space-y-4 sm:space-y-5 animate-in fade-in duration-100">
               
-              {/* Provider Selection Tabs Bar */}
-              <div className={`p-4 rounded-xl border space-y-3 transition-colors ${
-                isDark ? 'bg-zinc-900/80 border-zinc-800' : 'bg-white border-zinc-200 shadow-2xs'
+              {/* Type-Tailored CLI Command */}
+              <div className={`p-4 rounded-xl border ${
+                isDark ? 'bg-zinc-900/60 border-zinc-800' : 'bg-zinc-50 border-zinc-200'
               }`}>
-                <div className="flex items-center justify-between flex-wrap gap-2">
-                  <div className="flex items-center gap-2">
-                    <span className="p-1.5 rounded-lg bg-amber-500/10 text-amber-500 border border-amber-500/20">
-                      <Terminal className="w-4 h-4" />
-                    </span>
-                    <div>
-                      <h4 className={`text-xs font-bold uppercase tracking-wider ${
-                        isDark ? 'text-zinc-100' : 'text-zinc-950'
-                      }`}>
-                        Target AI Ecosystem (Isolated Hub)
-                      </h4>
-                      <p className={`text-[11px] ${isDark ? 'text-zinc-400' : 'text-zinc-500 font-medium'}`}>
-                        Switch ecosystem to view isolated CLI commands, file placement, and native configuration schemas
-                      </p>
-                    </div>
-                  </div>
-
-                  <span className={`text-[10px] font-mono font-bold px-2 py-0.5 rounded border ${
-                    getProviderMeta(selectedProvider).bgColor
-                  } ${getProviderMeta(selectedProvider).color} ${getProviderMeta(selectedProvider).borderColor}`}>
-                    {getProviderMeta(selectedProvider).badge} Active
-                  </span>
-                </div>
-
-                {/* Horizontal Scrollable Provider Buttons */}
-                <div className={`flex items-center rounded-xl p-1 text-xs overflow-x-auto gap-1 border scrollbar-none transition-colors ${
-                  isDark ? 'bg-zinc-950 border-zinc-800' : 'bg-zinc-100 border-zinc-200'
-                }`}>
-                  {AI_PROVIDERS.map((prov) => {
-                    const isSelected = selectedProvider === prov.id;
-                    return (
-                      <button
-                        key={prov.id}
-                        onClick={() => setSelectedProvider(prov.id)}
-                        className={`px-3 py-2 rounded-lg transition-all flex items-center gap-1.5 whitespace-nowrap cursor-pointer min-h-[38px] ${
-                          isSelected
-                            ? `bg-gradient-to-r ${prov.activeColor} text-white font-bold shadow-xs`
-                            : isDark
-                              ? 'text-zinc-400 hover:text-zinc-100 hover:bg-zinc-850 font-medium'
-                              : 'text-zinc-600 hover:text-zinc-950 hover:bg-zinc-200 font-medium'
-                        }`}
-                      >
-                        <span className={`w-2 h-2 rounded-full ${isSelected ? 'bg-white' : prov.color.replace('text-', 'bg-')}`} />
-                        <span className="text-xs font-semibold">{prov.shortName}</span>
-                      </button>
-                    );
-                  })}
-                </div>
-
-                {/* Active Provider Info & Isolation Notice */}
-                <div className={`p-3 rounded-lg border text-xs flex items-center justify-between flex-wrap gap-2 ${
-                  isDark ? 'bg-zinc-950/80 border-zinc-800/90 text-zinc-300' : 'bg-zinc-50 border-zinc-200 text-zinc-800'
-                }`}>
-                  <div className="flex items-center gap-2 min-w-0">
-                    <span className="font-bold text-zinc-900 dark:text-zinc-100">{getProviderMeta(selectedProvider).name}:</span>
-                    <span className="truncate text-zinc-600 dark:text-zinc-400">{getProviderMeta(selectedProvider).tagline}</span>
-                  </div>
-                  <div className="flex items-center gap-3 shrink-0">
-                    <span className="text-[10px] px-2 py-0.5 rounded font-mono bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 font-bold">
-                      Ecosystem Isolated
-                    </span>
-                    <a
-                      href={getProviderMeta(selectedProvider).docUrl}
-                      target="_blank"
-                      rel="noreferrer"
-                      className={`text-[11px] font-semibold hover:underline flex items-center gap-1 ${getProviderMeta(selectedProvider).color}`}
-                    >
-                      <span>Official Docs</span>
-                      <ExternalLink className="w-3 h-3" />
-                    </a>
-                  </div>
-                </div>
-              </div>
-
-              {/* Context Summary Box */}
-              <div className={`p-3.5 rounded-xl border grid grid-cols-1 sm:grid-cols-3 gap-2.5 text-xs ${
-                isDark ? 'bg-zinc-900/50 border-zinc-800 text-zinc-300' : 'bg-zinc-50/80 border-zinc-200 text-zinc-700'
-              }`}>
-                <div>
-                  <span className="text-[10px] font-bold uppercase tracking-wider text-zinc-500 block mb-0.5">Component Type</span>
-                  <span className="font-semibold capitalize text-zinc-900 dark:text-zinc-100">{component.type} • {component.category}</span>
-                </div>
-                <div>
-                  <span className="text-[10px] font-bold uppercase tracking-wider text-zinc-500 block mb-0.5">Target Provider Engine</span>
-                  <span className="font-semibold text-zinc-900 dark:text-zinc-100">{getProviderMeta(selectedProvider).name}</span>
-                </div>
-                <div>
-                  <span className="text-[10px] font-bold uppercase tracking-wider text-zinc-500 block mb-0.5">Target File Schema</span>
-                  <span className="font-mono text-[11px] text-amber-600 dark:text-amber-400 font-bold truncate block">{getProviderFileName(component, selectedProvider)}</span>
-                </div>
-              </div>
-
-              {/* 1. CLI Install Command */}
-              <div className={`p-4 rounded-xl border transition-colors ${
-                isDark ? 'bg-zinc-900/60 border-zinc-800' : 'bg-white border-zinc-200 shadow-2xs'
-              }`}>
-                <div className="flex items-center justify-between mb-2.5 flex-wrap gap-2">
+                <div className="flex items-center justify-between mb-2 flex-wrap gap-2">
                   <div className="flex items-center gap-2">
                     <span className="p-1 rounded bg-amber-500/10 text-amber-500">
                       <Terminal className="w-3.5 h-3.5" />
@@ -1509,11 +1387,11 @@ export const ComponentDetailModal: React.FC<ComponentDetailModalProps> = ({
                     <span className={`text-xs font-bold uppercase tracking-wider ${
                       isDark ? 'text-zinc-100' : 'text-zinc-950'
                     }`}>
-                      1. One-Liner CLI Command ({getProviderMeta(selectedProvider).shortName})
+                      1. Instant One-Liner CLI Command
                     </span>
                   </div>
                   <button
-                    onClick={() => handleCopy(getProviderInstallCommand(component, selectedProvider), `${getProviderMeta(selectedProvider).shortName} CLI Command`)}
+                    onClick={() => handleCopy(component.cliCommand || `npx claude-code-templates@latest --${component.type} ${component.slug}`, 'CLI Command')}
                     className="text-xs text-amber-600 dark:text-amber-400 hover:underline flex items-center gap-1 font-bold cursor-pointer"
                   >
                     <Copy className="w-3.5 h-3.5" />
@@ -1523,15 +1401,15 @@ export const ComponentDetailModal: React.FC<ComponentDetailModalProps> = ({
                 <div className={`p-3 rounded-lg font-mono text-xs overflow-x-auto select-all font-semibold ${
                   isDark ? 'bg-black text-amber-300' : 'bg-amber-50/80 border border-amber-200 text-amber-950'
                 }`}>
-                  {getProviderInstallCommand(component, selectedProvider)}
+                  {component.cliCommand || `npx claude-code-templates@latest --${component.type} ${component.slug}`}
                 </div>
               </div>
 
-              {/* 2. Direct Curl / Bash Script */}
-              <div className={`p-4 rounded-xl border transition-colors ${
-                isDark ? 'bg-zinc-900/60 border-zinc-800' : 'bg-white border-zinc-200 shadow-2xs'
+              {/* Direct Curl / Bash Installer */}
+              <div className={`p-4 rounded-xl border ${
+                isDark ? 'bg-zinc-900/60 border-zinc-800' : 'bg-zinc-50 border-zinc-200'
               }`}>
-                <div className="flex items-center justify-between mb-2.5 flex-wrap gap-2">
+                <div className="flex items-center justify-between mb-2 flex-wrap gap-2">
                   <div className="flex items-center gap-2">
                     <span className="p-1 rounded bg-blue-500/10 text-blue-500">
                       <Terminal className="w-3.5 h-3.5" />
@@ -1539,11 +1417,11 @@ export const ComponentDetailModal: React.FC<ComponentDetailModalProps> = ({
                     <span className={`text-xs font-bold uppercase tracking-wider ${
                       isDark ? 'text-zinc-100' : 'text-zinc-950'
                     }`}>
-                      2. Direct Bash Installer ({getProviderMeta(selectedProvider).shortName} • macOS / Linux)
+                      2. Direct Curl / Bash Script (macOS / Linux)
                     </span>
                   </div>
                   <button
-                    onClick={() => handleCopy(getProviderCurlScript(component, selectedProvider), `${getProviderMeta(selectedProvider).shortName} Bash Script`)}
+                    onClick={() => handleCopy(`curl -fsSL https://claude.ai/install/${component.slug}.sh | bash`, 'Curl Script')}
                     className="text-xs text-blue-600 dark:text-blue-400 hover:underline flex items-center gap-1 font-bold cursor-pointer"
                   >
                     <Copy className="w-3.5 h-3.5" />
@@ -1553,15 +1431,15 @@ export const ComponentDetailModal: React.FC<ComponentDetailModalProps> = ({
                 <div className={`p-3 rounded-lg font-mono text-xs overflow-x-auto select-all font-semibold ${
                   isDark ? 'bg-black text-blue-300' : 'bg-blue-50/80 border border-blue-200 text-blue-950'
                 }`}>
-                  {getProviderCurlScript(component, selectedProvider)}
+                  curl -fsSL https://claude.ai/install/{component.slug}.sh | bash
                 </div>
               </div>
 
-              {/* 3. Windows PowerShell */}
-              <div className={`p-4 rounded-xl border transition-colors ${
-                isDark ? 'bg-zinc-900/60 border-zinc-800' : 'bg-white border-zinc-200 shadow-2xs'
+              {/* Windows PowerShell */}
+              <div className={`p-4 rounded-xl border ${
+                isDark ? 'bg-zinc-900/60 border-zinc-800' : 'bg-zinc-50 border-zinc-200'
               }`}>
-                <div className="flex items-center justify-between mb-2.5 flex-wrap gap-2">
+                <div className="flex items-center justify-between mb-2 flex-wrap gap-2">
                   <div className="flex items-center gap-2">
                     <span className="p-1 rounded bg-sky-500/10 text-sky-500">
                       <Monitor className="w-3.5 h-3.5" />
@@ -1569,11 +1447,11 @@ export const ComponentDetailModal: React.FC<ComponentDetailModalProps> = ({
                     <span className={`text-xs font-bold uppercase tracking-wider ${
                       isDark ? 'text-zinc-100' : 'text-zinc-950'
                     }`}>
-                      3. Windows PowerShell Command ({getProviderMeta(selectedProvider).shortName})
+                      3. Windows PowerShell Command (Windows Terminal)
                     </span>
                   </div>
                   <button
-                    onClick={() => handleCopy(getProviderPowerShell(component, selectedProvider), `${getProviderMeta(selectedProvider).shortName} PowerShell`)}
+                    onClick={() => handleCopy(`irm https://claude.ai/install/${component.slug}.ps1 | iex`, 'PowerShell')}
                     className="text-xs text-sky-600 dark:text-sky-400 hover:underline flex items-center gap-1 font-bold cursor-pointer"
                   >
                     <Copy className="w-3.5 h-3.5" />
@@ -1583,106 +1461,33 @@ export const ComponentDetailModal: React.FC<ComponentDetailModalProps> = ({
                 <div className={`p-3 rounded-lg font-mono text-xs overflow-x-auto select-all font-semibold ${
                   isDark ? 'bg-black text-sky-300' : 'bg-sky-50/80 border border-sky-200 text-sky-950'
                 }`}>
-                  {getProviderPowerShell(component, selectedProvider)}
+                  irm https://claude.ai/install/{component.slug}.ps1 | iex
                 </div>
               </div>
 
-              {/* 4. Manual Local Placement Architecture */}
-              <div className={`p-4 rounded-xl border transition-colors ${
-                isDark ? 'bg-zinc-900/60 border-zinc-800' : 'bg-white border-zinc-200 shadow-2xs'
+              {/* Manual Local Placement */}
+              <div className={`p-4 rounded-xl border ${
+                isDark ? 'bg-zinc-900/60 border-zinc-800' : 'bg-zinc-50 border-zinc-200'
               }`}>
-                <div className="flex items-center gap-2 mb-2.5">
+                <div className="flex items-center gap-2 mb-2">
                   <span className="p-1 rounded bg-emerald-500/10 text-emerald-500">
                     <FolderCode className="w-3.5 h-3.5" />
                   </span>
                   <span className={`text-xs font-bold uppercase tracking-wider ${
                     isDark ? 'text-zinc-100' : 'text-zinc-950'
                   }`}>
-                    4. Target Directory Placement ({getProviderMeta(selectedProvider).shortName})
+                    4. Manual Local Placement & Directory Architecture
                   </span>
                 </div>
                 <div className={`space-y-1.5 font-mono text-xs p-3.5 rounded-lg overflow-x-auto ${
                   isDark ? 'text-zinc-300 bg-black/90' : 'text-zinc-800 bg-zinc-100/90 border border-zinc-200'
                 }`}>
-                  <p className={isDark ? 'text-zinc-400' : 'text-zinc-500 font-semibold'}># 1. Create target directory:</p>
-                  <p className={isDark ? 'text-emerald-400 font-bold' : 'text-emerald-700 font-bold'}>
-                    mkdir -p {getProviderTargetPlacement(component, selectedProvider).split('/').slice(0, -1).join('/') || '.'}
-                  </p>
-                  <p className={`pt-1 ${isDark ? 'text-zinc-400' : 'text-zinc-500 font-semibold'}`}># 2. Place configuration file at:</p>
+                  <p className={isDark ? 'text-zinc-400' : 'text-zinc-500 font-semibold'}># 1. Create target component directory:</p>
+                  <p className={isDark ? 'text-emerald-400 font-bold' : 'text-emerald-700 font-bold'}>mkdir -p ~/.claude/{component.type}s/{component.slug}</p>
+                  <p className={`pt-1 ${isDark ? 'text-zinc-400' : 'text-zinc-500 font-semibold'}`}># 2. Pull validated specification into directory:</p>
                   <p className={isDark ? 'text-amber-400 font-bold' : 'text-amber-700 font-bold'}>
-                    {getProviderTargetPlacement(component, selectedProvider)}
+                    curl -s https://claude.ai/templates/{component.slug}/{component.type === 'skill' ? 'SKILL.md' : component.type === 'mcp' ? 'claude_desktop_config.json' : component.type === 'agent' ? 'agent.yaml' : component.type === 'command' ? 'command.sh' : 'config.json'} &gt; ~/.claude/{component.type}s/{component.slug}/{component.type === 'skill' ? 'SKILL.md' : component.type === 'mcp' ? 'claude_desktop_config.json' : component.type === 'agent' ? 'agent.yaml' : component.type === 'command' ? 'command.sh' : 'config.json'}
                   </p>
-                </div>
-              </div>
-
-              {/* 5. Provider-Native Tool Specification & Configuration Code */}
-              <div className={`p-4 rounded-xl border transition-colors ${
-                isDark ? 'bg-zinc-900/60 border-zinc-800' : 'bg-white border-zinc-200 shadow-2xs'
-              }`}>
-                <div className="flex items-center justify-between mb-2.5 flex-wrap gap-2">
-                  <div className="flex items-center gap-2">
-                    <span className="p-1 rounded bg-purple-500/10 text-purple-500">
-                      <FileCode className="w-3.5 h-3.5" />
-                    </span>
-                    <span className={`text-xs font-bold uppercase tracking-wider ${
-                      isDark ? 'text-zinc-100' : 'text-zinc-950'
-                    }`}>
-                      5. Native {getProviderMeta(selectedProvider).shortName} Specification ({getProviderFileName(component, selectedProvider)})
-                    </span>
-                  </div>
-
-                  <div className="flex items-center gap-2">
-                    <button
-                      onClick={() => handleCopy(getProviderConfigSnippet(component, selectedProvider), `${getProviderMeta(selectedProvider).shortName} Spec`)}
-                      className="text-xs text-purple-600 dark:text-purple-400 hover:underline flex items-center gap-1 font-bold cursor-pointer"
-                    >
-                      <Copy className="w-3.5 h-3.5" />
-                      <span>Copy Spec</span>
-                    </button>
-                    <button
-                      onClick={() => handleDirectDownload(getProviderFileName(component, selectedProvider), getProviderConfigSnippet(component, selectedProvider))}
-                      className="text-xs text-emerald-600 dark:text-emerald-400 hover:underline flex items-center gap-1 font-bold cursor-pointer"
-                    >
-                      <Download className="w-3.5 h-3.5" />
-                      <span>Download File</span>
-                    </button>
-                  </div>
-                </div>
-
-                <pre className={`p-3.5 rounded-lg font-mono text-xs overflow-x-auto whitespace-pre-wrap leading-relaxed select-all max-h-60 ${
-                  isDark ? 'bg-black/90 border border-zinc-800 text-purple-300' : 'bg-purple-50/50 border border-purple-200 text-purple-950 font-medium'
-                }`}>
-                  {getProviderConfigSnippet(component, selectedProvider)}
-                </pre>
-              </div>
-
-              {/* 6. Runtime Verification & Health Check */}
-              <div className={`p-4 rounded-xl border transition-colors ${
-                isDark ? 'bg-zinc-900/60 border-zinc-800' : 'bg-white border-zinc-200 shadow-2xs'
-              }`}>
-                <div className="flex items-center justify-between mb-2.5 flex-wrap gap-2">
-                  <div className="flex items-center gap-2">
-                    <span className="p-1 rounded bg-teal-500/10 text-teal-500">
-                      <CheckCircle2 className="w-3.5 h-3.5" />
-                    </span>
-                    <span className={`text-xs font-bold uppercase tracking-wider ${
-                      isDark ? 'text-zinc-100' : 'text-zinc-950'
-                    }`}>
-                      6. Runtime Health Check & Verification ({getProviderMeta(selectedProvider).shortName})
-                    </span>
-                  </div>
-                  <button
-                    onClick={() => handleCopy(getProviderVerificationCommand(component, selectedProvider), 'Verification Command')}
-                    className="text-xs text-teal-600 dark:text-teal-400 hover:underline flex items-center gap-1 font-bold cursor-pointer"
-                  >
-                    <Copy className="w-3.5 h-3.5" />
-                    <span>Copy Check</span>
-                  </button>
-                </div>
-                <div className={`p-3 rounded-lg font-mono text-xs overflow-x-auto select-all font-semibold ${
-                  isDark ? 'bg-black text-teal-300' : 'bg-teal-50/80 border border-teal-200 text-teal-950'
-                }`}>
-                  {getProviderVerificationCommand(component, selectedProvider)}
                 </div>
               </div>
 
@@ -1698,13 +1503,13 @@ export const ComponentDetailModal: React.FC<ComponentDetailModalProps> = ({
           isDark ? 'bg-zinc-900/95 border-zinc-800' : 'bg-zinc-50 border-zinc-200'
         }`}>
           <div className="text-[11px] sm:text-xs text-zinc-500 text-center sm:text-left font-medium">
-            Version {component.version || '1.0.0'} • Apache 2.0 License • Verified for {getProviderMeta(selectedProvider).name}
+            Version {component.version || '1.0.0'} • Apache 2.0 License • Verified for Claude Code CLI 3.7
           </div>
 
           <div className="flex items-center gap-2.5 w-full sm:w-auto justify-end">
             {/* Direct CLI Copy Shortcut */}
             <button
-              onClick={() => handleCopy(getProviderInstallCommand(component, selectedProvider), `${getProviderMeta(selectedProvider).shortName} CLI`)}
+              onClick={() => handleCopy(component.cliCommand || `npx claude-code-templates@latest --${component.type} ${component.slug}`, 'CLI Command')}
               className={`flex items-center justify-center gap-1.5 px-3.5 py-2 rounded-lg text-xs font-bold border transition-colors cursor-pointer ${
                 isDark 
                   ? 'bg-zinc-900 border-zinc-700 text-zinc-300 hover:bg-zinc-800' 

@@ -24,17 +24,21 @@ export type Category =
   | 'sentry';
 
 export interface ComponentItem {
+  [key: string]: any;
   id: string;
   slug: string; // e.g. "development/code-reviewer"
   name: string;
   type: ComponentType;
-  category: Category;
+  category: string;
   description: string;
   installs: number; // e.g. 3564
   verified?: boolean;
   featured?: boolean;
   version?: string;
   author?: string;
+  abstract?: string;
+  date?: string;
+  organization?: string;
   tags: string[];
   triggers?: string[];
   fullInstructions?: string;
